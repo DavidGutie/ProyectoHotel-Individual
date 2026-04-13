@@ -1,0 +1,67 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": ["numero", "tipo", "precionoche", "max_ocupantes"],
+    "additionalProperties": true,
+    "properties": {
+      "numero": {
+        "bsonType": "int",
+        "minimum": 1,
+        "description": "numero debe ser un entero >= 1 y es obligatorio"
+      },
+      "tipo": {
+        "bsonType": "string",
+        "enum": ["individual", "doble", "triple", "suite"],
+        "description": "tipo debe ser uno de: individual, doble, triple, suite y es obligatorio"
+      },
+      "descripcion": {
+        "bsonType": "string",
+        "maxLength": 500,
+        "description": "descripcion debe ser string y como máximo 500 caracteres"
+      },
+      "imagen": {
+        "bsonType": "string",
+        "description": "imagen debe ser string"
+      },
+      "precionoche": {
+        "bsonType": ["int", "double", "decimal"],
+        "minimum": 0,
+        "description": "precionoche debe ser numérico >= 0 y es obligatorio"
+      },
+      "rate": {
+        "bsonType": ["int", "double", "decimal"],
+        "minimum": 0,
+        "maximum": 5,
+        "description": "rate debe estar entre 0 y 5"
+      },
+      "max_ocupantes": {
+        "bsonType": "int",
+        "minimum": 1,
+        "description": "max_ocupantes debe ser un entero >= 1 y es obligatorio"
+      },
+      "disponible": {
+        "bsonType": "bool",
+        "description": "disponible debe ser boolean"
+      },
+      "oferta": {
+        "bsonType": "bool",
+        "description": "oferta debe ser boolean"
+      },
+      "servicios": {
+        "bsonType": "array",
+        "items": {
+          "bsonType": "string"
+        },
+        "description": "servicios debe ser un array de strings"
+      },
+      "createdAt": {
+        "bsonType": "date",
+        "description": "createdAt debe ser date (timestamps)"
+      },
+      "updatedAt": {
+        "bsonType": "date",
+        "description": "updatedAt debe ser date (timestamps)"
+      }
+    }
+  }
+}
