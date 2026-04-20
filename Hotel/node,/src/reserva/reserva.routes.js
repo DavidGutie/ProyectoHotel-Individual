@@ -8,6 +8,8 @@ router.get('/', reservaController.obtenerReservas);
 
 router.get('/:id', reservaController.obtenerReservaPorId);
 
+router.get('/:id/audit', reservaController.obtenerHistorialReserva);
+
 router.put('/:id/cancelar', reservaController.cancelarReserva);
 
 router.delete('/:id', reservaController.eliminarReserva);
