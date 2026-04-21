@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const Reserva = require('./reserva.models');
 const Usuario = require('../usuario/usuario.models');
 const Habitacion = require('../habitacion/habitacion.models');
+const PDFDocument = require('pdfkit');
+const { obtenerDatosFactura, renderFacturaPdf } = require('./reservaInvoice.service');
 const {
   registrarAuditoriaReserva,
   obtenerAuditoriaPorReserva
@@ -214,5 +216,34 @@ exports.obtenerHistorialReserva = async (req, res) => {
     res.json(historial);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+exports.descargarFacturaReserva = async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ msg: 'Id de reserva no válido' });
+    }
+
+    const datosFactura = await obtenerDatosFactura(req.params.id);
+
+    const doc = new PDFDocument({
+      size: 'A4',
+      margin: 50
+    });
+
+    const nombreArchivo = `factura-${datosFactura.invoiceNumber}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${nombreArchivo}"`
+    );
+
+    doc.pipe(res);
+    renderFacturaPdf(doc, datosFactura);
+    doc.end();
+
+  } catch (error) {
+    res.status(error.status || 500).json({ error: error.message });
   }
 };

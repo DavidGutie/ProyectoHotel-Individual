@@ -6,6 +6,8 @@ router.post('/', reservaController.crearReserva);
 
 router.get('/', reservaController.obtenerReservas);
 
+router.get('/:id/factura', reservaController.descargarFacturaReserva);
+
 router.get('/:id', reservaController.obtenerReservaPorId);
 
 router.get('/:id/audit', reservaController.obtenerHistorialReserva);

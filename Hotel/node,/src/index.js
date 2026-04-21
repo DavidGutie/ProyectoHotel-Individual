@@ -33,15 +33,13 @@ const usuarioRoutes = require('./usuario/usuario.routes');
 const authRoutes = require('./auth/auth.routes');
 const resenaRoutes = require('./reseña/reseña.routes');
 const habitacionRoutes = require('./habitacion/habitacion.routes');
+const facturaRoutes = require('./factura/factura.routes');
 
-app.use('/reservas', reservaRoutes); // Esta es la que usará el ViewModel
+app.use('/reservas', reservaRoutes);
 app.use('/cliente', clienteRoutes);
 app.use('/empleado', empleadoRoutes);
 app.use('/usuario', usuarioRoutes);
 app.use('/auth', authRoutes);
 app.use('/resenas', resenaRoutes);
 app.use('/habitaciones', habitacionRoutes);
-
-app.listen(PORT, () => {
-    console.log(`Servidor API corriendo en http://localhost:${PORT}`);
-});
+app.use('/facturas', facturaRoutes);
