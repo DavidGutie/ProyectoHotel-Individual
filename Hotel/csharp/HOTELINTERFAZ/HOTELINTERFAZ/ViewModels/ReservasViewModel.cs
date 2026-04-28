@@ -38,7 +38,20 @@ namespace HOTELINTERFAZ.ViewModels
                 if (_mostrarSoloActivas == value) return;
                 _mostrarSoloActivas = value;
                 OnPropertyChanged(nameof(MostrarSoloActivas));
-                ReservasView.Refresh(); 
+                ReservasView.Refresh();
+            }
+        }
+
+        private string _filtroDni = "";
+        public string FiltroDni
+        {
+            get => _filtroDni;
+            set
+            {
+                if (_filtroDni == value) return;
+                _filtroDni = value;
+                OnPropertyChanged(nameof(FiltroDni));
+                ReservasView.Refresh();
             }
         }
 
@@ -59,10 +72,15 @@ namespace HOTELINTERFAZ.ViewModels
         {
             if (obj is not Reserva r) return false;
 
-            if (MostrarSoloActivas)
-                return !r.Cancelacion;
+            if (MostrarSoloActivas && r.Cancelacion)
+                return false;
 
-            return true;
+            var filtro = FiltroDni?.Trim().ToLower() ?? "";
+            if (string.IsNullOrWhiteSpace(filtro))
+                return true;
+
+            var dni = r.Cliente?.Dni?.Trim().ToLower() ?? "";
+            return dni.Contains(filtro);
         }
 
         public async Task CargarReservasAsync()
@@ -79,12 +97,10 @@ namespace HOTELINTERFAZ.ViewModels
                         Reservas.Add(r);
                 }
 
-
                 ReservasView.Refresh();
             }
             catch
             {
-
             }
         }
 
@@ -110,19 +126,6 @@ namespace HOTELINTERFAZ.ViewModels
             return false;
         }
 
-        private string _filtroDni = "";
-        public string FiltroDni
-        {
-            get => _filtroDni;
-            set
-            {
-                if (_filtroDni == value) return;
-                _filtroDni = value;
-                OnPropertyChanged(nameof(FiltroDni));
-                ReservasView.Refresh();
-            }
-        }
-
         public async Task<bool> EliminarReservaAsync(string id)
         {
             var response = await _client.DeleteAsync($"reservas/{id}");
@@ -134,7 +137,43 @@ namespace HOTELINTERFAZ.ViewModels
             return false;
         }
 
+        public async Task<List<ReservaAudit>> ObtenerHistorialReservaAsync(string id)
+        {
+            try
+            {
+                var response = await _client.GetAsync($"reservas/{id}/audit");
+
+                if (!response.IsSuccessStatusCode)
+                    return new List<ReservaAudit>();
+
+                var historial = await response.Content.ReadFromJsonAsync<List<ReservaAudit>>();
+                return historial ?? new List<ReservaAudit>();
+            }
+            catch
+            {
+                return new List<ReservaAudit>();
+            }
+        }
+
+        public async Task<byte[]> ObtenerFacturaPdfAsync(string id)
+        {
+            try
+            {
+                var response = await _client.GetAsync($"reservas/{id}/factura");
+
+                if (!response.IsSuccessStatusCode)
+                    return Array.Empty<byte>();
+
+                return await response.Content.ReadAsByteArrayAsync();
+            }
+            catch
+            {
+                return Array.Empty<byte>();
+            }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
+
         protected void OnPropertyChanged(string name)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }

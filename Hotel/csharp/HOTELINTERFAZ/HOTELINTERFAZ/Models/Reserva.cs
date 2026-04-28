@@ -29,6 +29,12 @@ namespace HOTELINTERFAZ.Models
         [JsonPropertyName("cancelacion")]
         public bool Cancelacion { get; set; }
 
+        [JsonPropertyName("invoiceNumber")]
+        public string InvoiceNumber { get; set; }
+
+        [JsonPropertyName("invoiceIssuedAt")]
+        public DateTime? InvoiceIssuedAt { get; set; }
+
         [JsonPropertyName("cliente")]
         public ClienteReducido Cliente { get; set; } 
 
