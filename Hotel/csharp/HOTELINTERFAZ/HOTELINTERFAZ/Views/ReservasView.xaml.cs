@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Linq;
 
 namespace HOTELINTERFAZ.Views
 {
@@ -47,6 +48,8 @@ namespace HOTELINTERFAZ.Views
                 return;
             }
 
+            var idReserva = _reservasVM.ReservaSeleccionada.Id;
+
             var confirm = MessageBox.Show(
                 "¿Desea cancelar esta reserva?",
                 "Confirmar cancelación",
@@ -57,11 +60,19 @@ namespace HOTELINTERFAZ.Views
             if (confirm != MessageBoxResult.Yes)
                 return;
 
-            bool exito = await _reservasVM.CancelarReservaAsync(_reservasVM.ReservaSeleccionada.Id);
+            bool exito = await _reservasVM.CancelarReservaAsync(idReserva);
 
-            MessageBox.Show(exito
-                ? "Reserva cancelada correctamente."
-                : "Error al cancelar la reserva.");
+            if (exito)
+            {
+                _reservasVM.MostrarReservaCanceladaTemporalmente(idReserva);
+                _reservasVM.ReservaSeleccionada = _reservasVM.Reservas.FirstOrDefault(r => r.Id == idReserva);
+
+                MessageBox.Show("Reserva cancelada correctamente.");
+            }
+            else
+            {
+                MessageBox.Show("Error al cancelar la reserva.");
+            }
         }
 
         private async void Eliminar_Click(object sender, RoutedEventArgs e)
@@ -79,6 +90,8 @@ namespace HOTELINTERFAZ.Views
                 return;
             }
 
+            var idReserva = _reservasVM.ReservaSeleccionada.Id;
+
             var confirm = MessageBox.Show(
                 "¿Eliminar definitivamente la reserva?",
                 "Confirmar",
@@ -88,11 +101,19 @@ namespace HOTELINTERFAZ.Views
 
             if (confirm == MessageBoxResult.Yes)
             {
-                bool exito = await _reservasVM.EliminarReservaAsync(_reservasVM.ReservaSeleccionada.Id);
+                bool exito = await _reservasVM.EliminarReservaAsync(idReserva);
 
-                MessageBox.Show(exito
-                    ? "Reserva eliminada correctamente."
-                    : "Error al eliminar la reserva.");
+                if (exito)
+                {
+                    if (_reservasVM.ReservaVisibleTemporalmenteId == idReserva)
+                        _reservasVM.LimpiarReservaVisibleTemporalmente();
+
+                    MessageBox.Show("Reserva eliminada correctamente.");
+                }
+                else
+                {
+                    MessageBox.Show("Error al eliminar la reserva.");
+                }
             }
         }
 

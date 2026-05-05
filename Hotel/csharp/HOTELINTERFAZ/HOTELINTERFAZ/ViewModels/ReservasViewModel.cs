@@ -54,6 +54,18 @@ namespace HOTELINTERFAZ.ViewModels
                 ReservasView.Refresh();
             }
         }
+        private string _reservaVisibleTemporalmenteId;
+        public string ReservaVisibleTemporalmenteId
+        {
+            get => _reservaVisibleTemporalmenteId;
+            set
+            {
+                if (_reservaVisibleTemporalmenteId == value) return;
+                _reservaVisibleTemporalmenteId = value;
+                OnPropertyChanged(nameof(ReservaVisibleTemporalmenteId));
+                ReservasView.Refresh();
+            }
+        }
 
         public ReservasViewModel()
         {
@@ -72,7 +84,7 @@ namespace HOTELINTERFAZ.ViewModels
         {
             if (obj is not Reserva r) return false;
 
-            if (MostrarSoloActivas && r.Cancelacion)
+            if (MostrarSoloActivas && r.Cancelacion && r.Id != ReservaVisibleTemporalmenteId)
                 return false;
 
             var filtro = FiltroDni?.Trim().ToLower() ?? "";
@@ -176,5 +188,16 @@ namespace HOTELINTERFAZ.ViewModels
 
         protected void OnPropertyChanged(string name)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+        public void MostrarReservaCanceladaTemporalmente(string id)
+        {
+            ReservaVisibleTemporalmenteId = id;
+        }
+
+        public void LimpiarReservaVisibleTemporalmente()
+        {
+            ReservaVisibleTemporalmenteId = null;
+        }
     }
+
 }

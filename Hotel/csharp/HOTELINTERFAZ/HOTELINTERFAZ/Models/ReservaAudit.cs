@@ -40,11 +40,6 @@ namespace HOTELINTERFAZ.Models
         };
 
         [JsonIgnore]
-        public string ActorTexto => string.IsNullOrWhiteSpace(ActorType)
-            ? "system"
-            : ActorType;
-
-        [JsonIgnore]
         public string ResumenCambio
         {
             get
@@ -54,9 +49,7 @@ namespace HOTELINTERFAZ.Models
                 if (Action == "ELIMINAR") return "La reserva fue eliminada.";
                 if (Action == "PAGO") return "Se registró un pago.";
                 if (Action == "EXTRA") return "Se añadió un extra.";
-
-                if (Action == "MODIFICAR")
-                    return "Se modificaron datos de la reserva.";
+                if (Action == "MODIFICAR") return "Se modificaron datos de la reserva.";
 
                 return "Cambio registrado.";
             }

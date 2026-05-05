@@ -35,9 +35,14 @@ namespace HOTELINTERFAZ.Models
         [JsonPropertyName("invoiceIssuedAt")]
         public DateTime? InvoiceIssuedAt { get; set; }
 
-        [JsonPropertyName("cliente")]
-        public ClienteReducido Cliente { get; set; } 
+        [JsonPropertyName("descuento")]
+        public double Descuento { get; set; }
 
+        [JsonPropertyName("impuestos")]
+        public double Impuestos { get; set; }
+
+        [JsonPropertyName("cliente")]
+        public ClienteReducido Cliente { get; set; }
 
         [JsonPropertyName("habitacion")]
         public HabitacionReducida Habitacion { get; set; }
