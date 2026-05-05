@@ -74,6 +74,12 @@ namespace HOTELINTERFAZ.ViewModels
                 BaseAddress = new Uri("http://localhost:3000/")
             };
 
+            if (SessionManager.UsuarioActual != null)
+            {
+                _client.DefaultRequestHeaders.Add("x-actor-id", SessionManager.UsuarioActual.Id);
+                _client.DefaultRequestHeaders.Add("x-actor-type", "employee");
+            }
+
             ReservasView = CollectionViewSource.GetDefaultView(Reservas);
             ReservasView.Filter = FiltrarReserva;
 
@@ -141,6 +147,33 @@ namespace HOTELINTERFAZ.ViewModels
         public async Task<bool> EliminarReservaAsync(string id)
         {
             var response = await _client.DeleteAsync($"reservas/{id}");
+            if (response.IsSuccessStatusCode)
+            {
+                await CargarReservasAsync();
+                return true;
+            }
+            return false;
+        }
+
+        public async Task<bool> RegistrarPagoAsync(string id)
+        {
+            var response = await _client.PostAsync($"reservas/{id}/pago", null);
+            if (response.IsSuccessStatusCode)
+            {
+                await CargarReservasAsync();
+                return true;
+            }
+            return false;
+        }
+
+        public async Task<bool> AgregarExtraAsync(string id, string concepto, double importe)
+        {
+            var response = await _client.PostAsJsonAsync($"reservas/{id}/extras", new
+            {
+                concepto,
+                importe
+            });
+
             if (response.IsSuccessStatusCode)
             {
                 await CargarReservasAsync();

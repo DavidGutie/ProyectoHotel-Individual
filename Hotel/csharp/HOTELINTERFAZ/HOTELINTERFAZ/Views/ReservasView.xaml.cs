@@ -137,6 +137,58 @@ namespace HOTELINTERFAZ.Views
             ventana.ShowDialog();
         }
 
+        private async void RegistrarPago_Click(object sender, RoutedEventArgs e)
+        {
+            if (_reservasVM.ReservaSeleccionada == null)
+            {
+                MessageBox.Show("Seleccione una reserva primero.");
+                return;
+            }
+
+            if (_reservasVM.ReservaSeleccionada.Cancelacion)
+            {
+                MessageBox.Show("No se puede registrar un pago en una reserva cancelada.");
+                return;
+            }
+
+            var exito = await _reservasVM.RegistrarPagoAsync(_reservasVM.ReservaSeleccionada.Id);
+            MessageBox.Show(exito
+                ? "Pago registrado correctamente."
+                : "No se pudo registrar el pago.");
+        }
+
+        private async void AgregarExtra_Click(object sender, RoutedEventArgs e)
+        {
+            if (_reservasVM.ReservaSeleccionada == null)
+            {
+                MessageBox.Show("Seleccione una reserva primero.");
+                return;
+            }
+
+            if (_reservasVM.ReservaSeleccionada.Cancelacion)
+            {
+                MessageBox.Show("No se pueden añadir extras a una reserva cancelada.");
+                return;
+            }
+
+            var ventana = new ExtraReservaWindow
+            {
+                Owner = Window.GetWindow(this)
+            };
+
+            if (ventana.ShowDialog() != true)
+                return;
+
+            var exito = await _reservasVM.AgregarExtraAsync(
+                _reservasVM.ReservaSeleccionada.Id,
+                ventana.Concepto,
+                ventana.Importe);
+
+            MessageBox.Show(exito
+                ? "Extra añadido correctamente."
+                : "No se pudo añadir el extra.");
+        }
+
         private async void DescargarFactura_Click(object sender, RoutedEventArgs e)
         {
             if (_reservasVM.ReservaSeleccionada == null)

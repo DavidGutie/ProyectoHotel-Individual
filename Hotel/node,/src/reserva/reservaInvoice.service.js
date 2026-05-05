@@ -1,7 +1,7 @@
 const Reserva = require('./reserva.models');
 const Usuario = require('../usuario/usuario.models');
 const Habitacion = require('../habitacion/habitacion.models');
-const FACTURA_CONFIG = require('../config/factura.config');
+const { obtenerConfigFactura } = require('../config/facturaConfig.service');
 
 function crearError(status, message) {
   const error = new Error(message);
@@ -105,7 +105,7 @@ exports.obtenerDatosFactura = async (reservaId) => {
   );
 
   return {
-    hotel: FACTURA_CONFIG,
+    hotel: obtenerConfigFactura(),
     reserva: reserva.toObject(),
     cliente,
     habitacion,
@@ -336,32 +336,55 @@ exports.renderFacturaPdf = (doc, datos) => {
     );
 };
 
-exports.listarFacturasPorUsuario = async (userId) => {
-  const reservas = await Reserva.find({
-    clienteId: userId,
+exports.listarFacturas = async ({ userId, filtro } = {}) => {
+  const consulta = {
     invoiceNumber: { $ne: null }
-  })
+  };
+
+  if (userId) {
+    consulta.clienteId = userId;
+  }
+
+  const reservas = await Reserva.find(consulta)
     .sort({ invoiceIssuedAt: -1, createdAt: -1 })
     .lean();
 
   const habitacionIds = reservas.map(r => r.habitacionId);
+  const clienteIds = reservas.map(r => r.clienteId);
+
   const habitaciones = await Habitacion.find({
     _id: { $in: habitacionIds }
   }).lean();
 
-  return reservas.map(reserva => {
+  const clientes = await Usuario.find({
+    _id: { $in: clienteIds }
+  }).lean();
+
+  const resultado = reservas.map(reserva => {
     const habitacion = habitaciones.find(
       h => h._id.toString() === reserva.habitacionId.toString()
     );
 
+    const cliente = clientes.find(
+      c => c._id.toString() === reserva.clienteId.toString()
+    );
+
     return {
       reservaId: reserva._id,
+      clienteId: reserva.clienteId,
       invoiceNumber: reserva.invoiceNumber,
       invoiceIssuedAt: reserva.invoiceIssuedAt,
       fechaEntrada: reserva.fechaEntrada,
       fechaSalida: reserva.fechaSalida,
       precioTotal: reserva.precioTotal,
       cancelacion: reserva.cancelacion,
+      cliente: cliente
+        ? {
+            nombre: cliente.nombre,
+            dni: cliente.dni,
+            email: cliente.email
+          }
+        : null,
       habitacion: habitacion
         ? {
             numero: habitacion.numero,
@@ -370,4 +393,27 @@ exports.listarFacturasPorUsuario = async (userId) => {
         : null
     };
   });
+
+  const filtroNormalizado = (filtro || '').trim().toLowerCase();
+
+  if (!filtroNormalizado) {
+    return resultado;
+  }
+
+  return resultado.filter(factura => {
+    return [
+      factura.invoiceNumber,
+      factura.cliente?.nombre,
+      factura.cliente?.dni,
+      factura.cliente?.email,
+      factura.habitacion?.numero?.toString(),
+      factura.habitacion?.tipo
+    ]
+      .filter(Boolean)
+      .some(valor => valor.toString().toLowerCase().includes(filtroNormalizado));
+  });
+};
+
+exports.listarFacturasPorUsuario = async (userId) => {
+  return exports.listarFacturas({ userId });
 };

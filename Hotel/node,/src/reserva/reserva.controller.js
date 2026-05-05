@@ -11,8 +11,8 @@ const {
 
 function obtenerActorDesdeRequest(req) {
   return {
-    actorId: req.body?.actorId || null,
-    actorType: req.body?.actorType || 'system'
+    actorId: req.body?.actorId || req.headers['x-actor-id'] || null,
+    actorType: req.body?.actorType || req.headers['x-actor-type'] || 'system'
   };
 }
 
@@ -167,6 +167,68 @@ exports.obtenerReservaPorId = async (req, res) => {
   }
 };
 
+exports.actualizarReserva = async (req, res) => {
+  try {
+    const reserva = await Reserva.findById(req.params.id);
+
+    if (!reserva) {
+      return res.status(404).json({ msg: 'Reserva no encontrada' });
+    }
+
+    if (reserva.cancelacion) {
+      return res.status(400).json({ msg: 'No se puede modificar una reserva cancelada' });
+    }
+
+    const camposPermitidos = [
+      'fechaEntrada',
+      'fechaSalida',
+      'personas',
+      'precioTotal',
+      'empresaNombre',
+      'empresaCif',
+      'empresaDireccion',
+      'descuento',
+      'impuestos'
+    ];
+
+    const previousState = reserva.toObject();
+
+    for (const campo of camposPermitidos) {
+      if (req.body[campo] !== undefined) {
+        reserva[campo] = req.body[campo];
+      }
+    }
+
+    if (new Date(reserva.fechaSalida) <= new Date(reserva.fechaEntrada)) {
+      return res.status(400).json({ msg: 'Fechas inválidas' });
+    }
+
+    if (reserva.personas < 1) {
+      return res.status(400).json({ msg: 'Debe haber al menos una persona' });
+    }
+
+    if (reserva.precioTotal < 0 || reserva.descuento < 0 || reserva.impuestos < 0) {
+      return res.status(400).json({ msg: 'Importes inválidos' });
+    }
+
+    const reservaActualizada = await reserva.save();
+    const { actorId, actorType } = obtenerActorDesdeRequest(req);
+
+    await registrarAuditoriaReserva({
+      reservaId: reservaActualizada._id,
+      action: 'MODIFICAR',
+      actorId,
+      actorType,
+      previousState,
+      newState: reservaActualizada.toObject()
+    });
+
+    res.json(reservaActualizada);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 exports.cancelarReserva = async (req, res) => {
   try {
     const reserva = await Reserva.findById(req.params.id);
@@ -196,6 +258,85 @@ exports.cancelarReserva = async (req, res) => {
     });
 
     res.json(reservaActualizada);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.registrarPagoReserva = async (req, res) => {
+  try {
+    const reserva = await Reserva.findById(req.params.id);
+
+    if (!reserva) {
+      return res.status(404).json({ msg: 'Reserva no encontrada' });
+    }
+
+    if (reserva.cancelacion) {
+      return res.status(400).json({ msg: 'No se puede registrar un pago en una reserva cancelada' });
+    }
+
+    const previousState = reserva.toObject();
+    const datosFactura = await obtenerDatosFactura(req.params.id);
+    const reservaActualizada = await Reserva.findById(req.params.id);
+    const { actorId, actorType } = obtenerActorDesdeRequest(req);
+
+    await registrarAuditoriaReserva({
+      reservaId: reservaActualizada._id,
+      action: 'PAGO',
+      actorId,
+      actorType,
+      previousState,
+      newState: reservaActualizada.toObject()
+    });
+
+    res.json({
+      msg: 'Pago registrado correctamente',
+      invoiceNumber: datosFactura.invoiceNumber,
+      reserva: reservaActualizada
+    });
+  } catch (error) {
+    res.status(error.status || 500).json({ error: error.message });
+  }
+};
+
+exports.agregarExtraReserva = async (req, res) => {
+  try {
+    const reserva = await Reserva.findById(req.params.id);
+
+    if (!reserva) {
+      return res.status(404).json({ msg: 'Reserva no encontrada' });
+    }
+
+    if (reserva.cancelacion) {
+      return res.status(400).json({ msg: 'No se pueden añadir extras a una reserva cancelada' });
+    }
+
+    const { concepto, importe } = req.body;
+
+    if (!concepto || importe === undefined || Number(importe) < 0) {
+      return res.status(400).json({ msg: 'Extra inválido' });
+    }
+
+    const previousState = reserva.toObject();
+    reserva.extras.push({
+      concepto,
+      importe: Number(importe)
+    });
+    reserva.precioTotal = Number(reserva.precioTotal || 0) + Number(importe);
+
+    const reservaActualizada = await reserva.save();
+    const { actorId, actorType } = obtenerActorDesdeRequest(req);
+
+    await registrarAuditoriaReserva({
+      reservaId: reservaActualizada._id,
+      action: 'EXTRA',
+      actorId,
+      actorType,
+      previousState,
+      newState: reservaActualizada.toObject()
+    });
+
+    res.status(201).json(reservaActualizada);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

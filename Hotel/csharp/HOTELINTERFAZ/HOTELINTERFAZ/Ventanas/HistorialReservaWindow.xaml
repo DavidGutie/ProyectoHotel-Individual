@@ -21,6 +21,7 @@
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
@@ -30,9 +31,23 @@
                            FontWeight="Bold"
                            Margin="0,0,0,15"/>
 
-                <DataGrid Grid.Row="1"
+                <StackPanel Grid.Row="1"
+                            Orientation="Horizontal"
+                            Margin="0,0,0,14">
+                    <TextBlock Text="Tipo de acción"
+                               Foreground="White"
+                               VerticalAlignment="Center"
+                               Margin="0,0,10,0"/>
+
+                    <ComboBox Width="190"
+                              Height="34"
+                              ItemsSource="{Binding FiltrosAccion}"
+                              SelectedItem="{Binding FiltroAccion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+
+                <DataGrid Grid.Row="2"
                           Style="{StaticResource DarkDataGrid}"
-                          ItemsSource="{Binding Historial}"
+                          ItemsSource="{Binding HistorialView}"
                           AutoGenerateColumns="False"
                           CanUserAddRows="False"
                           IsReadOnly="True"
@@ -43,13 +58,17 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Acción"
                                             Binding="{Binding AccionTexto}"
-                                            Width="220"/>
+                                            Width="170"/>
+
+                        <DataGridTextColumn Header="Actor"
+                                            Binding="{Binding ActorTexto}"
+                                            Width="110"/>
 
                         <DataGridTextColumn Header="Fecha y hora"
                                             Binding="{Binding Timestamp, StringFormat=dd/MM/yyyy HH:mm}"
-                                            Width="180"/>
+                                            Width="150"/>
 
-                        <DataGridTextColumn Header="Resumen"
+                        <DataGridTextColumn Header="Diferencia de estado"
                                             Binding="{Binding ResumenCambio}"
                                             Width="*"/>
                     </DataGrid.Columns>

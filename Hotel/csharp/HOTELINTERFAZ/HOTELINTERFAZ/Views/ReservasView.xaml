@@ -50,6 +50,14 @@
                                 Style="{StaticResource DarkButton}"
                                 Click="Historial_Click"/>
 
+                        <Button Content="Registrar pago"
+                                Style="{StaticResource DarkButton}"
+                                Click="RegistrarPago_Click"/>
+
+                        <Button Content="Añadir extra"
+                                Style="{StaticResource DarkButton}"
+                                Click="AgregarExtra_Click"/>
+
                         <Button Content="Descargar factura"
                                 Style="{StaticResource DarkButton}"
                                 Click="DescargarFactura_Click"/>
