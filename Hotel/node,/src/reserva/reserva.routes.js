@@ -12,7 +12,13 @@ router.get('/:id/audit', reservaController.obtenerHistorialReserva);
 
 router.get('/:id', reservaController.obtenerReservaPorId);
 
+router.patch('/:id', reservaController.actualizarReserva);
+
 router.put('/:id/cancelar', reservaController.cancelarReserva);
+
+router.post('/:id/pago', reservaController.registrarPagoReserva);
+
+router.post('/:id/extras', reservaController.agregarExtraReserva);
 
 router.delete('/:id', reservaController.eliminarReserva);
 

@@ -13,10 +13,6 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <UserControl.DataContext>
-        <vm:ReservasViewModel/>
-    </UserControl.DataContext>
-
     <Grid Background="{StaticResource BgMain}">
         <Grid Margin="22">
             <Grid.RowDefinitions>
@@ -41,27 +37,43 @@
                         <Button Content="Nueva"
                                 Style="{StaticResource AccentButton}"
                                 Click="NuevaReserva_Click"/>
+
                         <Button Content="Cancelar"
                                 Style="{StaticResource DarkButton}"
                                 Click="Cancelar_Click"/>
+
                         <Button Content="Eliminar"
                                 Style="{StaticResource DarkButton}"
                                 Click="Eliminar_Click"/>
+
+                        <Button Content="Historial"
+                                Style="{StaticResource DarkButton}"
+                                Click="Historial_Click"/>
+
+                        <Button Content="Registrar pago"
+                                Style="{StaticResource DarkButton}"
+                                Click="RegistrarPago_Click"/>
+
+                        <Button Content="Añadir extra"
+                                Style="{StaticResource DarkButton}"
+                                Click="AgregarExtra_Click"/>
+
+                        <Button Content="Descargar factura"
+                                Style="{StaticResource DarkButton}"
+                                Click="DescargarFactura_Click"/>
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
-
-                        <TextBox x:Name="TxtBuscar"
-                                 Width="220"
+                        <TextBox Width="220"
                                  Margin="0,0,10,0"
                                  VerticalContentAlignment="Center"
                                  Style="{StaticResource DarkTextBox}"
-                                 TextChanged="TxtBuscar_TextChanged"/>
+                                 Text="{Binding FiltroDni, UpdateSourceTrigger=PropertyChanged}"/>
 
                         <Button Content="Buscar"
                                 Style="{StaticResource AccentButton}"
                                 Click="Buscar_Click"/>
-                        
+
                         <CheckBox Content="Mostrar solo activas"
                                   Foreground="White"
                                   Margin="16,0,0,0"
@@ -72,8 +84,6 @@
             </Border>
 
             <DataGrid Grid.Row="2"
-                      
-                      
                       Style="{StaticResource DarkDataGrid}"
                       ItemsSource="{Binding ReservasView}"
                       SelectedItem="{Binding ReservaSeleccionada, Mode=TwoWay}"
@@ -84,15 +94,17 @@
                       SelectionUnit="FullRow">
 
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="160"/>
-                    <DataGridTextColumn Header="DNI" Binding="{Binding Cliente.Dni}" Width="140"/>
-                    <DataGridTextColumn Header="Cliente" Binding="{Binding Cliente.Nombre}" Width="180"/>
-                    <DataGridTextColumn Header="Habitación" Binding="{Binding Habitacion.Numero}" Width="160"/>
-                    <DataGridTextColumn Header="Entrada" Binding="{Binding FechaEntrada, StringFormat=dd/MM/yyyy}" Width="110"/>
-                    <DataGridTextColumn Header="Salida" Binding="{Binding FechaSalida, StringFormat=dd/MM/yyyy}" Width="110"/>
-                    <DataGridTextColumn Header="Personas" Binding="{Binding Personas}" Width="90"/>
-                    <DataGridTextColumn Header="Total" Binding="{Binding PrecioTotal}" Width="100"/>
-                    <DataGridCheckBoxColumn Header="Cancelada" Binding="{Binding Cancelacion}" Width="110"/>
+                    <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="155"/>
+                    <DataGridTextColumn Header="DNI" Binding="{Binding Cliente.Dni}" Width="125"/>
+                    <DataGridTextColumn Header="Cliente" Binding="{Binding Cliente.Nombre}" Width="170"/>
+                    <DataGridTextColumn Header="Habitación" Binding="{Binding Habitacion.Numero}" Width="100"/>
+                    <DataGridTextColumn Header="Entrada" Binding="{Binding FechaEntrada, StringFormat=dd/MM/yyyy}" Width="105"/>
+                    <DataGridTextColumn Header="Salida" Binding="{Binding FechaSalida, StringFormat=dd/MM/yyyy}" Width="105"/>
+                    <DataGridTextColumn Header="Personas" Binding="{Binding Personas}" Width="80"/>
+                    <DataGridTextColumn Header="Total" Binding="{Binding PrecioTotal, StringFormat={}{0:F2} €}" Width="105"/>
+                    <DataGridTextColumn Header="Factura" Binding="{Binding InvoiceNumber}" Width="145"/>
+                    <DataGridTextColumn Header="Fecha factura" Binding="{Binding InvoiceIssuedAt, StringFormat=dd/MM/yyyy}" Width="110"/>
+                    <DataGridCheckBoxColumn Header="Cancelada" Binding="{Binding Cancelacion}" Width="95"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>

@@ -1,9 +1,12 @@
-﻿using HOTELINTERFAZ.Ventanas;
+﻿using HOTELINTERFAZ.Models;
+using HOTELINTERFAZ.Ventanas;
 using HOTELINTERFAZ.ViewModels;
-using System.ComponentModel;
+using Microsoft.Win32;
+using System.Collections.Generic;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
+using System.Linq;
 
 namespace HOTELINTERFAZ.Views
 {
@@ -12,36 +15,16 @@ namespace HOTELINTERFAZ.Views
         private readonly ReservasViewModel _reservasVM = new ReservasViewModel();
         private readonly HabitacionesViewModel _habitacionesVM = new HabitacionesViewModel();
         private readonly ClientesViewModel _clientesVM = new ClientesViewModel();
-        private readonly ICollectionView _view;
 
         public ReservasView()
         {
             InitializeComponent();
             DataContext = _reservasVM;
-
-            _view = CollectionViewSource.GetDefaultView(_reservasVM.Reservas);
-            _view.Filter = FiltrarPorDni;
-        }
-
-        private bool FiltrarPorDni(object obj)
-        {
-            if (obj is not Models.Reserva r) return false;
-
-            var q = TxtBuscar?.Text?.Trim().ToLower() ?? "";
-            if (string.IsNullOrWhiteSpace(q)) return true;
-
-            var dni = r.Cliente?.Dni?.Trim().ToLower() ?? "";
-            return dni.Contains(q);
-        }
-
-        private void TxtBuscar_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            _view.Refresh();
         }
 
         private void Buscar_Click(object sender, RoutedEventArgs e)
         {
-            _view.Refresh();
+            _reservasVM.ReservasView.Refresh();
         }
 
         private void NuevaReserva_Click(object sender, RoutedEventArgs e)
@@ -65,6 +48,8 @@ namespace HOTELINTERFAZ.Views
                 return;
             }
 
+            var idReserva = _reservasVM.ReservaSeleccionada.Id;
+
             var confirm = MessageBox.Show(
                 "¿Desea cancelar esta reserva?",
                 "Confirmar cancelación",
@@ -75,10 +60,19 @@ namespace HOTELINTERFAZ.Views
             if (confirm != MessageBoxResult.Yes)
                 return;
 
-            bool exito = await _reservasVM.CancelarReservaAsync(_reservasVM.ReservaSeleccionada.Id);
+            bool exito = await _reservasVM.CancelarReservaAsync(idReserva);
 
-            MessageBox.Show(exito ? "Reserva cancelada correctamente."
-                                  : "Error al cancelar la reserva.");
+            if (exito)
+            {
+                _reservasVM.MostrarReservaCanceladaTemporalmente(idReserva);
+                _reservasVM.ReservaSeleccionada = _reservasVM.Reservas.FirstOrDefault(r => r.Id == idReserva);
+
+                MessageBox.Show("Reserva cancelada correctamente.");
+            }
+            else
+            {
+                MessageBox.Show("Error al cancelar la reserva.");
+            }
         }
 
         private async void Eliminar_Click(object sender, RoutedEventArgs e)
@@ -96,15 +90,137 @@ namespace HOTELINTERFAZ.Views
                 return;
             }
 
+            var idReserva = _reservasVM.ReservaSeleccionada.Id;
+
             var confirm = MessageBox.Show(
                 "¿Eliminar definitivamente la reserva?",
                 "Confirmar",
-                MessageBoxButton.YesNo
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning
             );
 
             if (confirm == MessageBoxResult.Yes)
             {
-                await _reservasVM.EliminarReservaAsync(_reservasVM.ReservaSeleccionada.Id);
+                bool exito = await _reservasVM.EliminarReservaAsync(idReserva);
+
+                if (exito)
+                {
+                    if (_reservasVM.ReservaVisibleTemporalmenteId == idReserva)
+                        _reservasVM.LimpiarReservaVisibleTemporalmente();
+
+                    MessageBox.Show("Reserva eliminada correctamente.");
+                }
+                else
+                {
+                    MessageBox.Show("Error al eliminar la reserva.");
+                }
+            }
+        }
+
+        private async void Historial_Click(object sender, RoutedEventArgs e)
+        {
+            if (_reservasVM.ReservaSeleccionada == null)
+            {
+                MessageBox.Show("Seleccione una reserva primero.");
+                return;
+            }
+
+            List<ReservaAudit> historial = await _reservasVM.ObtenerHistorialReservaAsync(_reservasVM.ReservaSeleccionada.Id);
+
+            if (historial == null || historial.Count == 0)
+            {
+                MessageBox.Show("No se encontró historial para esta reserva.");
+                return;
+            }
+
+            var ventana = new HistorialReservaWindow(historial, _reservasVM.ReservaSeleccionada.Id);
+            ventana.ShowDialog();
+        }
+
+        private async void RegistrarPago_Click(object sender, RoutedEventArgs e)
+        {
+            if (_reservasVM.ReservaSeleccionada == null)
+            {
+                MessageBox.Show("Seleccione una reserva primero.");
+                return;
+            }
+
+            if (_reservasVM.ReservaSeleccionada.Cancelacion)
+            {
+                MessageBox.Show("No se puede registrar un pago en una reserva cancelada.");
+                return;
+            }
+
+            var exito = await _reservasVM.RegistrarPagoAsync(_reservasVM.ReservaSeleccionada.Id);
+            MessageBox.Show(exito
+                ? "Pago registrado correctamente."
+                : "No se pudo registrar el pago.");
+        }
+
+        private async void AgregarExtra_Click(object sender, RoutedEventArgs e)
+        {
+            if (_reservasVM.ReservaSeleccionada == null)
+            {
+                MessageBox.Show("Seleccione una reserva primero.");
+                return;
+            }
+
+            if (_reservasVM.ReservaSeleccionada.Cancelacion)
+            {
+                MessageBox.Show("No se pueden añadir extras a una reserva cancelada.");
+                return;
+            }
+
+            var ventana = new ExtraReservaWindow
+            {
+                Owner = Window.GetWindow(this)
+            };
+
+            if (ventana.ShowDialog() != true)
+                return;
+
+            var exito = await _reservasVM.AgregarExtraAsync(
+                _reservasVM.ReservaSeleccionada.Id,
+                ventana.Concepto,
+                ventana.Importe);
+
+            MessageBox.Show(exito
+                ? "Extra añadido correctamente."
+                : "No se pudo añadir el extra.");
+        }
+
+        private async void DescargarFactura_Click(object sender, RoutedEventArgs e)
+        {
+            if (_reservasVM.ReservaSeleccionada == null)
+            {
+                MessageBox.Show("Seleccione una reserva primero.");
+                return;
+            }
+
+            byte[] pdf = await _reservasVM.ObtenerFacturaPdfAsync(_reservasVM.ReservaSeleccionada.Id);
+
+            if (pdf == null || pdf.Length == 0)
+            {
+                MessageBox.Show("No se pudo obtener la factura PDF.");
+                return;
+            }
+
+            string numeroFactura = string.IsNullOrWhiteSpace(_reservasVM.ReservaSeleccionada.InvoiceNumber)
+                ? _reservasVM.ReservaSeleccionada.Id
+                : _reservasVM.ReservaSeleccionada.InvoiceNumber;
+
+            var saveDialog = new SaveFileDialog
+            {
+                Filter = "Archivo PDF (*.pdf)|*.pdf",
+                FileName = $"factura-{numeroFactura}.pdf"
+            };
+
+            if (saveDialog.ShowDialog() == true)
+            {
+                File.WriteAllBytes(saveDialog.FileName, pdf);
+                MessageBox.Show("Factura descargada correctamente.");
+
+                await _reservasVM.CargarReservasAsync();
             }
         }
     }

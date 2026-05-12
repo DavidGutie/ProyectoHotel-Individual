@@ -91,6 +91,12 @@
                     HorizontalContentAlignment="Left" Cursor="Hand"
                     Click="GestionReservas_Click"/>
 
+            <Button Content="Gestión de Facturas"
+                    Height="80" Margin="10" Foreground="White" FontSize="15"
+                    Background="Transparent" BorderBrush="Transparent"
+                    HorizontalContentAlignment="Left" Cursor="Hand"
+                    Click="GestionFacturas_Click"/>
+
             <Button Content="Gestión de Reseñas"
                     Height="80" Margin="10" Foreground="White" FontSize="15"
                     Background="Transparent" BorderBrush="Transparent"
