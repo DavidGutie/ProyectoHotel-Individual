@@ -57,6 +57,33 @@ const tryParseArray = (value) => {
   return [value];
 };
 
+const normalizarServicios = (value) => {
+  const servicios = tryParseArray(value)
+    .flatMap(item => {
+      if (typeof item !== "string") return [item];
+      return item.split(/[;,]/);
+    })
+    .map(item => String(item).trim())
+    .filter(Boolean);
+
+  const vistos = new Set();
+  return servicios.filter(servicio => {
+    const key = servicio.toLowerCase();
+    if (vistos.has(key)) return false;
+    vistos.add(key);
+    return true;
+  });
+};
+
+const resolverServiciosBody = (body) => {
+  if (Object.prototype.hasOwnProperty.call(body, "servicios")) return body.servicios;
+  if (Object.prototype.hasOwnProperty.call(body, "amenities")) return body.amenities;
+  if (Object.prototype.hasOwnProperty.call(body, "amenidades")) return body.amenidades;
+  if (Object.prototype.hasOwnProperty.call(body, "servicio")) return body.servicio;
+  if (Object.prototype.hasOwnProperty.call(body, "amenity")) return body.amenity;
+  return undefined;
+};
+
 const getUploadedPaths = (req) => {
   // Con upload.fields: req.files = { imagen: [..], imagenes: [..] }
   const out = [];
@@ -98,10 +125,13 @@ exports.crearHabitacion = async (req, res) => {
       'max_ocupantes',
       'disponible',
       'oferta',
-      'servicios'
+      'servicios',
+      'amenities',
+      'amenidades'
     ];
 
     const datos = pickAllowed(req.body, allowedFields);
+    const servicios = resolverServiciosBody(datos);
     
     const urlsExternas = tryParseArray(datos.imagenes).map(String).filter(Boolean);
     
@@ -117,7 +147,7 @@ exports.crearHabitacion = async (req, res) => {
       rate: datos.rate ?? 0,
       disponible: datos.disponible ?? true,
       oferta: datos.oferta ?? false,
-      servicios: datos.servicios ?? []
+      servicios: servicios !== undefined ? normalizarServicios(servicios) : []
     });
 
     const habitacionGuardada = await nuevaHabitacion.save();
@@ -167,10 +197,13 @@ exports.actualizarHabitacion = async (req, res) => {
       'disponible',
       'oferta',
       'servicios',
+      'amenities',
+      'amenidades',
       'replace'       
     ];
 
     const datos = pickAllowed(req.body, allowedFields);
+    const servicios = resolverServiciosBody(datos);
 
     const habitacion = await Habitacion.findById(id);
     if (!habitacion) {
@@ -211,7 +244,7 @@ exports.actualizarHabitacion = async (req, res) => {
     if (datos.max_ocupantes !== undefined) habitacion.max_ocupantes = datos.max_ocupantes;
     if (datos.disponible !== undefined) habitacion.disponible = datos.disponible;
     if (datos.oferta !== undefined) habitacion.oferta = datos.oferta;
-    if (datos.servicios !== undefined) habitacion.servicios = datos.servicios;
+    if (servicios !== undefined) habitacion.servicios = normalizarServicios(servicios);
 
     const guardada = await habitacion.save();
     return res.json(guardada);
@@ -220,6 +253,134 @@ exports.actualizarHabitacion = async (req, res) => {
     try { borrarUploadsLocales(getUploadedPaths(req)); } catch {}
     console.error(error);
     return handleMongoErrors(error, res, 'Error actualizando la habitación');
+  }
+};
+
+exports.obtenerServiciosHabitacion = async (req, res) => {
+  try {
+    const habitacion = await Habitacion.findById(req.params.id).select('numero tipo servicios');
+    if (!habitacion) return res.status(404).json({ message: 'Habitación no encontrada' });
+
+    return res.json({
+      habitacionId: habitacion._id,
+      numero: habitacion.numero,
+      tipo: habitacion.tipo,
+      servicios: habitacion.servicios ?? []
+    });
+  } catch (error) {
+    console.error(error);
+    return handleMongoErrors(error, res, 'Error obteniendo los servicios de la habitación');
+  }
+};
+
+exports.reemplazarServiciosHabitacion = async (req, res) => {
+  try {
+    const servicios = resolverServiciosBody(req.body);
+    if (servicios === undefined) {
+      return res.status(400).json({ message: 'Debes enviar servicios, amenities o amenidades' });
+    }
+
+    const habitacion = await Habitacion.findById(req.params.id);
+    if (!habitacion) return res.status(404).json({ message: 'Habitación no encontrada' });
+
+    habitacion.servicios = normalizarServicios(servicios);
+    const guardada = await habitacion.save();
+
+    return res.json({
+      habitacionId: guardada._id,
+      numero: guardada.numero,
+      tipo: guardada.tipo,
+      servicios: guardada.servicios
+    });
+  } catch (error) {
+    console.error(error);
+    return handleMongoErrors(error, res, 'Error actualizando los servicios de la habitación');
+  }
+};
+
+exports.agregarServiciosHabitacion = async (req, res) => {
+  try {
+    const servicios = resolverServiciosBody(req.body);
+    if (servicios === undefined) {
+      return res.status(400).json({ message: 'Debes enviar servicios, amenities o amenidades' });
+    }
+
+    const habitacion = await Habitacion.findById(req.params.id);
+    if (!habitacion) return res.status(404).json({ message: 'Habitación no encontrada' });
+
+    habitacion.servicios = normalizarServicios([
+      ...(habitacion.servicios ?? []),
+      ...normalizarServicios(servicios)
+    ]);
+    const guardada = await habitacion.save();
+
+    return res.json({
+      habitacionId: guardada._id,
+      numero: guardada.numero,
+      tipo: guardada.tipo,
+      servicios: guardada.servicios
+    });
+  } catch (error) {
+    console.error(error);
+    return handleMongoErrors(error, res, 'Error agregando servicios a la habitación');
+  }
+};
+
+exports.eliminarServicioHabitacion = async (req, res) => {
+  try {
+    const servicio = String(req.params.servicio ?? '').trim();
+    if (!servicio) return res.status(400).json({ message: 'Servicio inválido' });
+
+    const habitacion = await Habitacion.findById(req.params.id);
+    if (!habitacion) return res.status(404).json({ message: 'Habitación no encontrada' });
+
+    const servicioLower = servicio.toLowerCase();
+    habitacion.servicios = (habitacion.servicios ?? []).filter(
+      item => String(item).trim().toLowerCase() !== servicioLower
+    );
+    const guardada = await habitacion.save();
+
+    return res.json({
+      habitacionId: guardada._id,
+      numero: guardada.numero,
+      tipo: guardada.tipo,
+      servicios: guardada.servicios
+    });
+  } catch (error) {
+    console.error(error);
+    return handleMongoErrors(error, res, 'Error eliminando el servicio de la habitación');
+  }
+};
+
+exports.eliminarServiciosHabitacion = async (req, res) => {
+  try {
+    const servicios = resolverServiciosBody(req.body);
+    if (servicios === undefined) {
+      return res.status(400).json({ message: 'Debes enviar servicios, amenities o amenidades' });
+    }
+
+    const serviciosAEliminar = normalizarServicios(servicios).map(servicio => servicio.toLowerCase());
+    if (!serviciosAEliminar.length) {
+      return res.status(400).json({ message: 'Debes enviar al menos un servicio' });
+    }
+
+    const habitacion = await Habitacion.findById(req.params.id);
+    if (!habitacion) return res.status(404).json({ message: 'Habitación no encontrada' });
+
+    habitacion.servicios = (habitacion.servicios ?? []).filter(
+      item => !serviciosAEliminar.includes(String(item).trim().toLowerCase())
+    );
+    const guardada = await habitacion.save();
+
+    return res.json({
+      habitacionId: guardada._id,
+      numero: guardada.numero,
+      tipo: guardada.tipo,
+      servicios: guardada.servicios
+    });
+  } catch (error) {
+    console.error(error);
+    return handleMongoErrors(error, res, 'Error eliminando servicios de la habitación');
   }
 };
 
