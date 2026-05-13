@@ -38,6 +38,10 @@
                                 Style="{StaticResource AccentButton}"
                                 Click="NuevaReserva_Click"/>
 
+                        <Button Content="Modificar"
+                                Style="{StaticResource DarkButton}"
+                                Click="Modificar_Click"/>
+
                         <Button Content="Cancelar"
                                 Style="{StaticResource DarkButton}"
                                 Click="Cancelar_Click"/>
@@ -57,10 +61,6 @@
                         <Button Content="Añadir extra"
                                 Style="{StaticResource DarkButton}"
                                 Click="AgregarExtra_Click"/>
-
-                        <Button Content="Descargar factura"
-                                Style="{StaticResource DarkButton}"
-                                Click="DescargarFactura_Click"/>
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">

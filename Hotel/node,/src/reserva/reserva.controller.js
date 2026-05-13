@@ -180,6 +180,7 @@ exports.actualizarReserva = async (req, res) => {
     }
 
     const camposPermitidos = [
+      'habitacionId',
       'fechaEntrada',
       'fechaSalida',
       'personas',

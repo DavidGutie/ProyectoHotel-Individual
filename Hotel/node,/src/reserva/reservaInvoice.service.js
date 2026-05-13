@@ -138,201 +138,190 @@ exports.renderFacturaPdf = (doc, datos) => {
     extras,
     descuento,
     impuestos,
-    totalFinal,
     formatearFecha,
     formatearImporte
   } = datos;
 
-  const colorPrincipal = '#1f3c88';
-  const colorSuave = '#e9eef9';
   const margenIzq = 50;
   const margenDer = 545;
+  const anchoPagina = margenDer - margenIzq;
+  const colorBorde = '#222222';
+  const colorFondo = '#f4f4f4';
+  const colorTexto = '#111111';
+  const ivaPorDefecto = 21;
+  const texto = (valor) => valor || '-';
 
-  const linea = () => {
-    const y = doc.y;
+  const dibujarCaja = (x, y, ancho, alto, titulo, lineas) => {
     doc
-      .strokeColor('#d9d9d9')
       .lineWidth(1)
-      .moveTo(margenIzq, y)
-      .lineTo(margenDer, y)
+      .strokeColor(colorBorde)
+      .rect(x, y, ancho, alto)
       .stroke();
-    doc.moveDown(0.7);
-  };
-
-  const filaConcepto = (concepto, importe, negrita = false) => {
-    doc
-      .font(negrita ? 'Helvetica-Bold' : 'Helvetica')
-      .fontSize(11)
-      .fillColor('#000000')
-      .text(concepto, margenIzq, doc.y, { width: 360 });
-
-    doc
-      .font(negrita ? 'Helvetica-Bold' : 'Helvetica')
-      .fontSize(11)
-      .text(importe, 430, doc.y - 14, {
-        width: 110,
-        align: 'right'
-      });
-
-    doc.moveDown(0.5);
-  };
-
-  // CABECERA
-  doc
-    .rect(margenIzq, 40, 495, 55)
-    .fill(colorPrincipal);
-
-  doc
-    .fillColor('#ffffff')
-    .font('Helvetica-Bold')
-    .fontSize(21)
-    .text(hotel.nombreHotel, 65, 58);
-
-  doc
-    .fillColor('#000000')
-    .moveDown(3);
-
-  doc
-    .font('Helvetica-Bold')
-    .fontSize(18)
-    .fillColor(colorPrincipal)
-    .text('FACTURA', margenIzq, 120);
-
-  doc
-    .font('Helvetica')
-    .fontSize(10)
-    .fillColor('#000000')
-    .text(`Número: ${invoiceNumber}`, 380, 122, { width: 160, align: 'right' })
-    .text(`Fecha: ${formatearFecha(fechaFactura)}`, 380, 137, { width: 160, align: 'right' });
-
-  doc.moveDown(1.5);
-
-  // DATOS HOTEL
-  doc
-    .rect(margenIzq, doc.y, 230, 75)
-    .fill(colorSuave);
-
-  const yHotel = doc.y - 68;
-
-  doc
-    .fillColor(colorPrincipal)
-    .font('Helvetica-Bold')
-    .fontSize(11)
-    .text('Datos del hotel', margenIzq + 12, yHotel);
-
-  doc
-    .fillColor('#000000')
-    .font('Helvetica')
-    .fontSize(10)
-    .text(`CIF: ${hotel.cif}`, margenIzq + 12, yHotel + 18)
-    .text(`Dirección: ${hotel.direccion}`, margenIzq + 12, yHotel + 34, { width: 200 })
-    .text(`Email: ${hotel.email}`, margenIzq + 12, yHotel + 52);
-
-  // DATOS CLIENTE
-  doc
-    .rect(315, yHotel - 7, 230, 90)
-    .fill(colorSuave);
-
-  doc
-    .fillColor(colorPrincipal)
-    .font('Helvetica-Bold')
-    .fontSize(11)
-    .text('Datos del cliente', 327, yHotel);
-
-  doc
-    .fillColor('#000000')
-    .font('Helvetica')
-    .fontSize(10)
-    .text(`Nombre: ${cliente.nombre}`, 327, yHotel + 18)
-    .text(`DNI: ${cliente.dni}`, 327, yHotel + 34)
-    .text(`Email: ${cliente.email}`, 327, yHotel + 50, { width: 200 });
-
-  if (reserva.empresaNombre || reserva.empresaCif || reserva.empresaDireccion) {
-    doc.moveDown(2.5);
 
     doc
       .font('Helvetica-Bold')
-      .fontSize(11)
-      .fillColor(colorPrincipal)
-      .text('Datos de empresa', margenIzq);
+      .fontSize(12)
+      .fillColor(colorTexto)
+      .text(titulo, x + 12, y - 18, { width: ancho - 24, align: 'center' });
 
     doc
       .font('Helvetica')
-      .fontSize(10)
-      .fillColor('#000000')
-      .text(`Empresa: ${reserva.empresaNombre || '-'}`)
-      .text(`CIF: ${reserva.empresaCif || '-'}`)
-      .text(`Dirección: ${reserva.empresaDireccion || '-'}`);
+      .fontSize(9)
+      .fillColor(colorTexto);
 
-    doc.moveDown(0.8);
-  } else {
-    doc.moveDown(2.8);
-  }
+    lineas.forEach((linea, index) => {
+      doc.text(linea, x + 12, y + 14 + (index * 15), { width: ancho - 24 });
+    });
+  };
 
-  linea();
-
-  doc
-    .font('Helvetica-Bold')
-    .fontSize(11)
-    .fillColor(colorPrincipal)
-    .text('Detalle de la estancia');
-
-  doc.moveDown(0.4);
-
-  doc
-    .font('Helvetica')
-    .fontSize(10)
-    .fillColor('#000000')
-    .text(`Habitación: ${habitacion.numero} - ${habitacion.tipo}`)
-    .text(`Entrada: ${formatearFecha(reserva.fechaEntrada)}`)
-    .text(`Salida: ${formatearFecha(reserva.fechaSalida)}`)
-    .text(`Personas: ${reserva.personas}`)
-    .text(`Noches: ${noches}`);
-
-  doc.moveDown(0.8);
-  linea();
-
-  doc
-    .font('Helvetica-Bold')
-    .fontSize(11)
-    .fillColor(colorPrincipal)
-    .text('Desglose económico');
-
-  doc.moveDown(0.5);
-
-  filaConcepto(
-    `Alojamiento (${noches} noche(s) x ${formatearImporte(precioNoche)})`,
-    formatearImporte(subtotalNoches)
-  );
-
-  extras.forEach(extra => {
-    filaConcepto(`Extra - ${extra.concepto}`, formatearImporte(extra.importe));
-  });
+  const filas = [
+    {
+      detalle: `Habitacion ${habitacion.numero} - ${habitacion.tipo}`,
+      precio: precioNoche,
+      cantidad: noches,
+      importe: subtotalNoches
+    },
+    ...extras.map(extra => ({
+      detalle: `Extra - ${extra.concepto}`,
+      precio: extra.importe,
+      cantidad: 1,
+      importe: extra.importe
+    }))
+  ];
 
   if (descuento > 0) {
-    filaConcepto('Descuento', `- ${formatearImporte(descuento)}`);
+    filas.push({
+      detalle: 'Descuento',
+      precio: -descuento,
+      cantidad: 1,
+      importe: -descuento
+    });
   }
 
-  if (impuestos > 0) {
-    filaConcepto('Impuestos', formatearImporte(impuestos));
-  }
+  const subtotal = redondear(filas.reduce((acc, fila) => acc + fila.importe, 0));
+  const ivaImporte = impuestos > 0
+    ? impuestos
+    : redondear(subtotal * (ivaPorDefecto / 100));
+  const ivaPorcentaje = subtotal > 0
+    ? redondear((ivaImporte / subtotal) * 100)
+    : ivaPorDefecto;
+  const totalConIva = redondear(subtotal + ivaImporte);
 
-  doc.moveDown(0.4);
-  linea();
+  doc
+    .font('Helvetica-Bold')
+    .fontSize(22)
+    .fillColor(colorTexto)
+    .text('FACTURA', margenIzq, 36, { width: anchoPagina, align: 'center' });
 
-  filaConcepto('TOTAL', formatearImporte(totalFinal), true);
+  dibujarCaja(margenIzq, 88, 225, 120, 'Datos empresa', [
+    texto(hotel.nombreHotel),
+    `CIF: ${texto(hotel.cif)}`,
+    `Direccion: ${texto(hotel.direccion)}`,
+    `Email: ${texto(hotel.email)}`,
+    `Telefono: ${texto(hotel.telefono)}`
+  ]);
 
-  doc.moveDown(1.2);
+  dibujarCaja(320, 88, 225, 120, 'Datos cliente', [
+    `Nombre: ${texto(cliente.nombre)}`,
+    `DNI: ${texto(cliente.dni)}`,
+    `Email: ${texto(cliente.email)}`,
+    reserva.empresaNombre ? `Empresa: ${reserva.empresaNombre}` : ''
+  ].filter(Boolean));
+
+  doc
+    .font('Helvetica-Bold')
+    .fontSize(11)
+    .fillColor(colorTexto)
+    .text(`No Factura: ${invoiceNumber}`, margenIzq, 235)
+    .text(`Fecha factura: ${formatearFecha(fechaFactura)}`, 320, 235);
+
+  const tablaY = 290;
+  const detalleX = margenIzq;
+  const precioX = 355;
+  const cantidadX = 430;
+  const importeX = 485;
+  const cabeceraAlto = 26;
+  const filaAlto = 25;
+
+  doc
+    .rect(detalleX, tablaY, anchoPagina, cabeceraAlto)
+    .fill(colorFondo)
+    .strokeColor(colorBorde)
+    .rect(detalleX, tablaY, anchoPagina, cabeceraAlto)
+    .stroke();
+
+  doc
+    .font('Helvetica-Bold')
+    .fontSize(10)
+    .fillColor(colorTexto)
+    .text('Detalle factura', detalleX + 8, tablaY + 8, { width: 290 })
+    .text('Precio', precioX, tablaY + 8, { width: 65, align: 'right' })
+    .text('Cant.', cantidadX, tablaY + 8, { width: 45, align: 'right' })
+    .text('Importe', importeX, tablaY + 8, { width: 55, align: 'right' });
+
+  let y = tablaY + cabeceraAlto;
+
+  filas.forEach(fila => {
+    doc
+      .strokeColor('#cccccc')
+      .rect(detalleX, y, anchoPagina, filaAlto)
+      .stroke();
+
+    doc
+      .font('Helvetica')
+      .fontSize(9)
+      .fillColor(colorTexto)
+      .text(fila.detalle, detalleX + 8, y + 8, { width: 285 })
+      .text(formatearImporte(fila.precio), precioX, y + 8, { width: 65, align: 'right' })
+      .text(String(fila.cantidad), cantidadX, y + 8, { width: 45, align: 'right' })
+      .text(formatearImporte(fila.importe), importeX, y + 8, { width: 55, align: 'right' });
+
+    doc
+      .strokeColor(colorBorde)
+      .moveTo(precioX - 8, y)
+      .lineTo(precioX - 8, y + filaAlto)
+      .moveTo(cantidadX - 8, y)
+      .lineTo(cantidadX - 8, y + filaAlto)
+      .moveTo(importeX - 8, y)
+      .lineTo(importeX - 8, y + filaAlto)
+      .stroke();
+
+    y += filaAlto;
+  });
+
+  y += 38;
+
+  const resumenX = 340;
+  const filaResumen = (label, valor, bold = false) => {
+    doc
+      .font(bold ? 'Helvetica-Bold' : 'Helvetica')
+      .fontSize(bold ? 12 : 10)
+      .fillColor(colorTexto)
+      .text(label, resumenX, y, { width: 110 })
+      .text(valor, resumenX + 110, y, { width: 95, align: 'right' });
+    y += bold ? 22 : 18;
+  };
+
+  filaResumen('Subtotal', formatearImporte(subtotal));
+  filaResumen(`IVA (${ivaPorcentaje.toFixed(2)}%)`, formatearImporte(ivaImporte));
+
+  doc
+    .strokeColor(colorBorde)
+    .moveTo(resumenX, y - 4)
+    .lineTo(margenDer, y - 4)
+    .stroke();
+
+  filaResumen('Total', formatearImporte(totalConIva), true);
 
   doc
     .font('Helvetica')
     .fontSize(9)
     .fillColor('#555555')
     .text(
-      'Documento generado automáticamente por el sistema del hotel.',
+      `Estancia: ${formatearFecha(reserva.fechaEntrada)} - ${formatearFecha(reserva.fechaSalida)} | Personas: ${reserva.personas}`,
       margenIzq,
-      doc.y,
-      { align: 'left' }
+      760,
+      { width: anchoPagina, align: 'center' }
     );
 };
 

@@ -1,9 +1,7 @@
 ﻿using HOTELINTERFAZ.Models;
 using HOTELINTERFAZ.Ventanas;
 using HOTELINTERFAZ.ViewModels;
-using Microsoft.Win32;
 using System.Collections.Generic;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Linq;
@@ -31,6 +29,29 @@ namespace HOTELINTERFAZ.Views
         {
             var nuevaReservaWindow = new NuevaReservaWindow(_reservasVM, _habitacionesVM, _clientesVM);
             nuevaReservaWindow.ShowDialog();
+        }
+
+        private void Modificar_Click(object sender, RoutedEventArgs e)
+        {
+            if (_reservasVM.ReservaSeleccionada == null)
+            {
+                MessageBox.Show("Seleccione una reserva primero.");
+                return;
+            }
+
+            if (_reservasVM.ReservaSeleccionada.Cancelacion)
+            {
+                MessageBox.Show("No se puede modificar una reserva cancelada.");
+                return;
+            }
+
+            var editarReservaWindow = new NuevaReservaWindow(
+                _reservasVM,
+                _habitacionesVM,
+                _clientesVM,
+                _reservasVM.ReservaSeleccionada);
+
+            editarReservaWindow.ShowDialog();
         }
 
         private async void Cancelar_Click(object sender, RoutedEventArgs e)
@@ -189,39 +210,5 @@ namespace HOTELINTERFAZ.Views
                 : "No se pudo añadir el extra.");
         }
 
-        private async void DescargarFactura_Click(object sender, RoutedEventArgs e)
-        {
-            if (_reservasVM.ReservaSeleccionada == null)
-            {
-                MessageBox.Show("Seleccione una reserva primero.");
-                return;
-            }
-
-            byte[] pdf = await _reservasVM.ObtenerFacturaPdfAsync(_reservasVM.ReservaSeleccionada.Id);
-
-            if (pdf == null || pdf.Length == 0)
-            {
-                MessageBox.Show("No se pudo obtener la factura PDF.");
-                return;
-            }
-
-            string numeroFactura = string.IsNullOrWhiteSpace(_reservasVM.ReservaSeleccionada.InvoiceNumber)
-                ? _reservasVM.ReservaSeleccionada.Id
-                : _reservasVM.ReservaSeleccionada.InvoiceNumber;
-
-            var saveDialog = new SaveFileDialog
-            {
-                Filter = "Archivo PDF (*.pdf)|*.pdf",
-                FileName = $"factura-{numeroFactura}.pdf"
-            };
-
-            if (saveDialog.ShowDialog() == true)
-            {
-                File.WriteAllBytes(saveDialog.FileName, pdf);
-                MessageBox.Show("Factura descargada correctamente.");
-
-                await _reservasVM.CargarReservasAsync();
-            }
-        }
     }
 }
