@@ -133,6 +133,17 @@ namespace HOTELINTERFAZ.ViewModels
             return false;
         }
 
+        public async Task<bool> ActualizarReservaAsync(Reserva reserva)
+        {
+            var response = await _client.PatchAsJsonAsync($"reservas/{reserva.Id}", reserva);
+            if (response.IsSuccessStatusCode)
+            {
+                await CargarReservasAsync();
+                return true;
+            }
+            return false;
+        }
+
         public async Task<bool> CancelarReservaAsync(string id)
         {
             var response = await _client.PutAsync($"reservas/{id}/cancelar", null);

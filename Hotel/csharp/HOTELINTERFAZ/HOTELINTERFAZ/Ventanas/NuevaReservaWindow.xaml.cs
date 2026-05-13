@@ -13,6 +13,8 @@ namespace HOTELINTERFAZ.Ventanas
         private readonly ReservasViewModel _reservasVM;
         private readonly HabitacionesViewModel _habitacionesVM;
         private readonly ClientesViewModel _clientesVM;
+        private readonly Reserva _reservaEditar;
+        private readonly bool _modoEdicion;
 
         public ObservableCollection<Habitacion> HabitacionesDisponibles { get; set; } = new();
         public Habitacion HabitacionSeleccionada { get; set; }
@@ -21,14 +23,38 @@ namespace HOTELINTERFAZ.Ventanas
             ReservasViewModel reservasVM,
             HabitacionesViewModel habitacionesVM,
             ClientesViewModel clientesVM)
+            : this(reservasVM, habitacionesVM, clientesVM, null)
+        {
+        }
+
+        public NuevaReservaWindow(
+            ReservasViewModel reservasVM,
+            HabitacionesViewModel habitacionesVM,
+            ClientesViewModel clientesVM,
+            Reserva reservaEditar)
         {
             InitializeComponent();
 
             _reservasVM = reservasVM;
             _habitacionesVM = habitacionesVM;
             _clientesVM = clientesVM;
+            _reservaEditar = reservaEditar;
+            _modoEdicion = reservaEditar != null;
 
             DataContext = this;
+
+            if (_modoEdicion)
+            {
+                Title = "Modificar Reserva";
+                GuardarButton.Content = "Guardar cambios";
+                FechaEntradaPicker.DisplayDateStart = null;
+                FechaSalidaPicker.DisplayDateStart = null;
+                DniTextBox.IsEnabled = false;
+                DniTextBox.Text = _reservaEditar.Cliente?.Dni ?? "";
+                FechaEntradaPicker.SelectedDate = _reservaEditar.FechaEntrada.Date;
+                FechaSalidaPicker.SelectedDate = _reservaEditar.FechaSalida.Date;
+                TextBoxPersonas.Text = _reservaEditar.Personas.ToString();
+            }
 
             FechaEntradaPicker.SelectedDateChanged += Fechas_SelectedDateChanged;
             FechaSalidaPicker.SelectedDateChanged += Fechas_SelectedDateChanged;
@@ -43,6 +69,13 @@ namespace HOTELINTERFAZ.Ventanas
             await _clientesVM.CargarClientesAsync();
 
             ActualizarHabitacionesDisponibles();
+
+            if (_modoEdicion)
+            {
+                HabitacionSeleccionada = HabitacionesDisponibles
+                    .FirstOrDefault(h => h.Id == _reservaEditar.HabitacionId);
+                ComboBoxHabitacion.SelectedItem = HabitacionSeleccionada;
+            }
         }
 
         private void Fechas_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
@@ -65,6 +98,8 @@ namespace HOTELINTERFAZ.Ventanas
 
             var disponibles = _habitacionesVM.Habitaciones
                 .Where(h => !_reservasVM.Reservas.Any(r =>
+                    (!_modoEdicion || r.Id != _reservaEditar.Id) &&
+                    !r.Cancelacion &&
                     r.HabitacionId == h.Id &&
                     !(salida <= r.FechaEntrada || entrada >= r.FechaSalida)
                 ));
@@ -118,7 +153,7 @@ namespace HOTELINTERFAZ.Ventanas
 
             var reserva = new Reserva
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = _modoEdicion ? _reservaEditar.Id : Guid.NewGuid().ToString(),
                 ClienteId = clienteExistente.Id,
                 HabitacionId = habitacion.Id,
                 FechaEntrada = FechaEntradaPicker.SelectedDate.Value.Date,
@@ -128,16 +163,22 @@ namespace HOTELINTERFAZ.Ventanas
                 Cancelacion = false
             };
 
-            bool exito = await _reservasVM.AgregarReservaAsync(reserva);
+            bool exito = _modoEdicion
+                ? await _reservasVM.ActualizarReservaAsync(reserva)
+                : await _reservasVM.AgregarReservaAsync(reserva);
 
             if (exito)
             {
-                MessageBox.Show("Reserva creada correctamente");
+                MessageBox.Show(_modoEdicion
+                    ? "Reserva modificada correctamente"
+                    : "Reserva creada correctamente");
                 Close();
             }
             else
             {
-                MessageBox.Show("Error creando la reserva");
+                MessageBox.Show(_modoEdicion
+                    ? "Error modificando la reserva"
+                    : "Error creando la reserva");
             }
         }
 

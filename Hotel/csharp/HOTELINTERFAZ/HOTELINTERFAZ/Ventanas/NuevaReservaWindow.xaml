@@ -32,7 +32,8 @@
                       DisplayMemberPath="Numero"
                       SelectedItem="{Binding HabitacionSeleccionada, Mode=TwoWay}" />
 
-            <Button Content="Crear"
+            <Button x:Name="GuardarButton"
+                    Content="Crear"
                     Margin="0,20,0,0"
                     Click="Crear_Click"
                     Background="#E6C86E"/>
