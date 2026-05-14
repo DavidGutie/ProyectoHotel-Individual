@@ -1,9 +1,7 @@
 package com.example.aplicacion_hotel.View.navigation
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
@@ -30,6 +28,13 @@ fun BottomNavigationBar(navController: NavController) {
             onClick = { navController.navigate(Routes.Reservas.route) },
             label = { Text("Reservas") },
             icon = { Icon(Icons.Default.Star, null) }
+        )
+
+        NavigationBarItem(
+            selected = false,
+            onClick = { navController.navigate(Routes.Carrito.route) },
+            label = { Text("Carrito") },
+            icon = { Icon(Icons.Default.ShoppingCart, null) }
         )
 
         NavigationBarItem(

@@ -47,6 +47,10 @@ fun HomeScreen(navController: NavController) {
                 ReservasScreen()
             }
 
+            composable(Routes.Carrito.route) {
+                CarritoScreen(navController)
+            }
+
             composable(Routes.Vip.route) {
                 VipScreen(navController)
             }

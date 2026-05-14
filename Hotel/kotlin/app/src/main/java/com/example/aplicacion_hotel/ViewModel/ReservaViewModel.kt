@@ -8,8 +8,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.aplicacion_hotel.Model.CrearReservaRequest
 import com.example.aplicacion_hotel.Model.Reserva
+import com.example.aplicacion_hotel.Model.ReservaAuditEntry
 import com.example.aplicacion_hotel.Repository.ReservaRepository
 import kotlinx.coroutines.launch
+import okhttp3.ResponseBody
 
 class ReservaViewModel : ViewModel() {
 
@@ -20,6 +22,15 @@ class ReservaViewModel : ViewModel() {
 
     private val _reservas = mutableStateOf<List<Reserva>>(emptyList())
     val reservas: State<List<Reserva>> = _reservas
+
+    private val _historiales = mutableStateOf<Map<String, List<String>>>(emptyMap())
+    val historiales: State<Map<String, List<String>>> = _historiales
+
+    private val _facturaDescargada = mutableStateOf<Pair<String, ResponseBody>?>(null)
+    val facturaDescargada: State<Pair<String, ResponseBody>?> = _facturaDescargada
+
+    private val _descargandoFactura = mutableStateOf<String?>(null)
+    val descargandoFactura: State<String?> = _descargandoFactura
 
     var errorMessage by mutableStateOf<String?>(null)
         private set
@@ -61,6 +72,9 @@ class ReservaViewModel : ViewModel() {
                     reserva.clienteId == clienteIdLoggeado
                 } ?: emptyList()
 
+                _reservas.value.forEach { reserva ->
+                    cargarHistorialReserva(reserva)
+                }
             } catch (e: Exception) {
                 errorMessage = "Error al cargar las reservas: ${e.message}"
             }
@@ -72,13 +86,66 @@ class ReservaViewModel : ViewModel() {
             try {
                 val exito = repository.cancelarReserva(reservaId)
                 if (exito) {
-                    cargarReservas(clienteId) 
+                    cargarReservas(clienteId)
                 } else {
                     errorMessage = "Error del servidor al cancelar"
                 }
             } catch (e: Exception) {
-                errorMessage = "Fallo de conexión: ${e.message}"
+                errorMessage = "Fallo de conexion: ${e.message}"
             }
         }
+    }
+
+    fun cargarHistorialReserva(reserva: Reserva) {
+        viewModelScope.launch {
+            val historial = repository.obtenerHistorialReserva(reserva._id)
+                ?.mapNotNull { it.toTextoCliente() }
+                ?.ifEmpty { null }
+                ?: historialLocal(reserva)
+
+            _historiales.value = _historiales.value + (reserva._id to historial)
+        }
+    }
+
+    fun descargarFactura(reservaId: String) {
+        viewModelScope.launch {
+            try {
+                _descargandoFactura.value = reservaId
+                errorMessage = null
+                val body = repository.descargarFactura(reservaId)
+                if (body != null) {
+                    _facturaDescargada.value = reservaId to body
+                } else {
+                    errorMessage = "No se pudo generar la factura"
+                }
+            } catch (e: Exception) {
+                errorMessage = "Error al descargar factura: ${e.message}"
+            } finally {
+                _descargandoFactura.value = null
+            }
+        }
+    }
+
+    fun facturaProcesada() {
+        _facturaDescargada.value = null
+    }
+
+    private fun ReservaAuditEntry.toTextoCliente(): String? {
+        return when (action.trim().lowercase()) {
+            "created", "create", "reserva_creada", "booking_created" -> "Reserva creada"
+            "payment_received", "paid", "pago_recibido" -> "Pago recibido"
+            "check_in", "checkin", "checked_in" -> "Check-in realizado"
+            "service_added", "servicio_anadido" -> "Servicio anadido"
+            "cancelled", "canceled", "reserva_cancelada" -> "Reserva cancelada"
+            else -> action.takeIf { it.isNotBlank() }?.replaceFirstChar { it.uppercase() }
+        }
+    }
+
+    private fun historialLocal(reserva: Reserva): List<String> {
+        val acciones = mutableListOf("Reserva creada", "Pago recibido")
+        if (reserva.cancelacion) {
+            acciones += "Reserva cancelada"
+        }
+        return acciones
     }
 }
