@@ -37,6 +37,25 @@ const reservaSchema = new mongoose.Schema({
     required: true,
     min: 1
   },
+  mascotas: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  suplementoMascotas: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  with_pet: {
+    type: Boolean,
+    default: false
+  },
+  pet_supplement_total: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
   precioTotal: {
     type: Number,
     required: true,
