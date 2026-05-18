@@ -38,9 +38,25 @@
                         <Button Content="Nueva" Style="{StaticResource AccentButton}" Click="Nueva_Click"/>
                         <Button Content="Editar" Style="{StaticResource DarkButton}" Click="Editar_Click"/>
                         <Button Content="Eliminar" Style="{StaticResource DarkButton}" Click="Eliminar_Click"/>
+                        <Button Content="Amenities" Style="{StaticResource DarkButton}" Click="Amenities_Click"/>
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                        <ComboBox x:Name="CmbMascotas"
+                                  Width="150"
+                                  Margin="0,0,10,0"
+                                  VerticalContentAlignment="Center"
+                                  SelectionChanged="Filtro_Changed">
+                            <ComboBoxItem Content="Todas" IsSelected="True"/>
+                            <ComboBoxItem Content="Admiten mascotas"/>
+                            <ComboBoxItem Content="No admiten mascotas"/>
+                        </ComboBox>
+                        <TextBox x:Name="TxtAmenity"
+                                 Width="180"
+                                 Margin="0,0,10,0"
+                                 VerticalContentAlignment="Center"
+                                 Style="{StaticResource DarkTextBox}"
+                                 ToolTip="Filtrar por amenities, separados por coma"/>
                         <TextBox x:Name="TxtBuscar"
                                  Width="280"
                                  Margin="0,0,10,0"
@@ -83,7 +99,19 @@
 
                     <DataGridTextColumn Header="Servicios"
 							Binding="{Binding ServiciosTexto}"
-							Width="240"/>
+							Width="190"/>
+
+                    <DataGridTextColumn Header="Amenities"
+							Binding="{Binding AmenitiesTexto}"
+							Width="220"/>
+
+                    <DataGridCheckBoxColumn Header="Mascotas"
+                                Binding="{Binding AdmiteMascotas}"
+                                Width="100"/>
+
+                    <DataGridTextColumn Header="Supl. mascota"
+                            Binding="{Binding SuplementoMascotasNoche, StringFormat={}{0:F2} €}"
+                            Width="120"/>
 
                     <DataGridTemplateColumn Header="Imagen" Width="140">
                         <DataGridTemplateColumn.CellTemplate>

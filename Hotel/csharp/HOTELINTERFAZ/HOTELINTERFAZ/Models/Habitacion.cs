@@ -42,6 +42,60 @@ namespace HOTELINTERFAZ.Models
 
         [JsonPropertyName("servicios")]
         public ObservableCollection<string> Servicios { get; set; } = new();
+
+        [JsonPropertyName("amenities")]
+        public ObservableCollection<Amenity> Amenities { get; set; } = new();
+
+        [JsonPropertyName("pets_allowed")]
+        public bool PetsAllowed { get; set; }
+
+        [JsonPropertyName("pet_supplement_per_night")]
+        public double PetSupplementPerNight { get; set; }
+
+        [JsonPropertyName("aceptaMascotas")]
+        public bool AceptaMascotas { get; set; }
+
+        [JsonPropertyName("suplementoMascota")]
+        public double SuplementoMascota { get; set; }
+
+        [JsonPropertyName("politicaMascotas")]
+        public string PoliticaMascotas { get; set; } = "";
+
+        [JsonPropertyName("maxMascotas")]
+        public int MaxMascotas { get; set; }
+
+        [JsonIgnore]
+        public bool AdmiteMascotas
+        {
+            get => PetsAllowed || AceptaMascotas;
+            set
+            {
+                PetsAllowed = value;
+                AceptaMascotas = value;
+            }
+        }
+
+        [JsonIgnore]
+        public double SuplementoMascotasNoche
+        {
+            get => PetSupplementPerNight > 0 ? PetSupplementPerNight : SuplementoMascota;
+            set
+            {
+                PetSupplementPerNight = value;
+                SuplementoMascota = value;
+            }
+        }
+
+        [JsonIgnore]
+        public string AmenitiesTexto => Amenities == null || Amenities.Count == 0
+            ? ""
+            : string.Join(", ", Amenities.Select(a => a.Name));
+
+        [JsonIgnore]
+        public List<string> AmenityIds => Amenities?
+            .Where(a => !string.IsNullOrWhiteSpace(a.Id))
+            .Select(a => a.Id)
+            .ToList() ?? new List<string>();
         
         [JsonIgnore]
         public string ServiciosTexto

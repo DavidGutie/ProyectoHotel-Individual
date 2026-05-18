@@ -25,13 +25,14 @@ namespace HOTELINTERFAZ.Views
             _reservasVM.ReservasView.Refresh();
         }
 
-        private void NuevaReserva_Click(object sender, RoutedEventArgs e)
+        private async void NuevaReserva_Click(object sender, RoutedEventArgs e)
         {
             var nuevaReservaWindow = new NuevaReservaWindow(_reservasVM, _habitacionesVM, _clientesVM);
             nuevaReservaWindow.ShowDialog();
+            await _reservasVM.CargarReservasAsync();
         }
 
-        private void Modificar_Click(object sender, RoutedEventArgs e)
+        private async void Modificar_Click(object sender, RoutedEventArgs e)
         {
             if (_reservasVM.ReservaSeleccionada == null)
             {
@@ -52,6 +53,7 @@ namespace HOTELINTERFAZ.Views
                 _reservasVM.ReservaSeleccionada);
 
             editarReservaWindow.ShowDialog();
+            await _reservasVM.CargarReservasAsync();
         }
 
         private async void Cancelar_Click(object sender, RoutedEventArgs e)
