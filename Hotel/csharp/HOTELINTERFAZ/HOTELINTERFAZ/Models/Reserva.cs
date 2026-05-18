@@ -23,8 +23,26 @@ namespace HOTELINTERFAZ.Models
         [JsonPropertyName("personas")]
         public int Personas { get; set; }
 
+        [JsonPropertyName("mascotas")]
+        public int Mascotas { get; set; }
+
+        [JsonPropertyName("suplementoMascotas")]
+        public double SuplementoMascotas { get; set; }
+
+        [JsonPropertyName("with_pet")]
+        public bool WithPet { get; set; }
+
+        [JsonPropertyName("pet_supplement_total")]
+        public double PetSupplementTotal { get; set; }
+
         [JsonPropertyName("precioTotal")]
         public double PrecioTotal { get; set; }  
+
+        [JsonIgnore]
+        public bool IncluyeMascota => WithPet || Mascotas > 0;
+
+        [JsonIgnore]
+        public double ImporteSuplementoMascota => PetSupplementTotal > 0 ? PetSupplementTotal : SuplementoMascotas;
 
         [JsonPropertyName("cancelacion")]
         public bool Cancelacion { get; set; }

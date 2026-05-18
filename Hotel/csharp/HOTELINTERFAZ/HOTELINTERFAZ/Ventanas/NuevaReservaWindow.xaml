@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         Title="Crear Reserva"
-        Height="350"
+        Height="440"
         Width="400"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
@@ -30,7 +30,25 @@
             <ComboBox x:Name="ComboBoxHabitacion"
                       ItemsSource="{Binding HabitacionesDisponibles}" 
                       DisplayMemberPath="Numero"
-                      SelectedItem="{Binding HabitacionSeleccionada, Mode=TwoWay}" />
+                      SelectedItem="{Binding HabitacionSeleccionada, Mode=TwoWay}"
+                      SelectionChanged="ComboBoxHabitacion_SelectionChanged" />
+
+            <CheckBox x:Name="CheckMascota"
+                      Content="Incluye mascota"
+                      Foreground="White"
+                      Margin="0,12,0,0"
+                      Checked="Mascota_Changed"
+                      Unchecked="Mascota_Changed"/>
+
+            <TextBlock Text="Número de mascotas" Foreground="White"/>
+            <TextBox x:Name="TextBoxMascotas"
+                     Text="0"
+                     IsEnabled="False"/>
+
+            <TextBlock x:Name="TxtSuplementoMascotas"
+                       Text=""
+                       Foreground="#E6C86E"
+                       Margin="0,6,0,0"/>
 
             <Button x:Name="GuardarButton"
                     Content="Crear"

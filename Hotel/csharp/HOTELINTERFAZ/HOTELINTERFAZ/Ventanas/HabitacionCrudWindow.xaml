@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:HOTELINTERFAZ.Ventanas"
         mc:Ignorable="d"
-        Title="HabitacionCrudWindow" Height="620" Width="520">
+        Title="HabitacionCrudWindow" Height="720" Width="620">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -55,6 +55,55 @@
                             <CheckBox Content="Disponible" IsChecked="{Binding Disponible}" Foreground="White" Margin="0,0,18,0"/>
                             <CheckBox Content="Oferta" IsChecked="{Binding Oferta}" Foreground="White"/>
                         </StackPanel>
+
+                        <TextBlock Text="Mascotas" Foreground="White" FontWeight="Bold" Margin="0,4,0,8"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <CheckBox Content="Admite mascotas"
+                                      IsChecked="{Binding AdmiteMascotas}"
+                                      Foreground="White"
+                                      VerticalAlignment="Center"
+                                      Margin="0,0,18,0"/>
+                            <StackPanel Width="190" Margin="0,0,12,0">
+                                <TextBlock Text="Suplemento/noche" Foreground="White"/>
+                                <TextBox Text="{Binding SuplementoMascotasNoche}" Style="{StaticResource DarkTextBox}" Margin="0,6,0,0"/>
+                            </StackPanel>
+                            <StackPanel Width="130">
+                                <TextBlock Text="Máx. mascotas" Foreground="White"/>
+                                <TextBox Text="{Binding MaxMascotas}" Style="{StaticResource DarkTextBox}" Margin="0,6,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <TextBlock Text="Política de mascotas" Foreground="White"/>
+                        <TextBox Text="{Binding PoliticaMascotas}" Style="{StaticResource DarkTextBox}" Margin="0,6,0,12"/>
+
+                        <TextBlock Text="Amenities" Foreground="White" FontWeight="Bold" Margin="0,4,0,8"/>
+                        <ItemsControl x:Name="AmenityCategoriesItems" Margin="0,0,0,12">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="#4A4A4A" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0,0,0,10">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Category}" Foreground="#E6C86E" FontWeight="Bold" Margin="0,0,0,8"/>
+                                            <ItemsControl ItemsSource="{Binding Items}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <WrapPanel/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <CheckBox Content="{Binding DisplayName}"
+                                                                  IsChecked="{Binding IsSelected}"
+                                                                  Foreground="White"
+                                                                  Width="170"
+                                                                  Margin="0,0,8,8"/>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
                         <TextBlock Text="Servicios (separados por coma o punto y coma)" Foreground="White"/>
                         <TextBox Text="{Binding ServiciosTexto}" Style="{StaticResource DarkTextBox}" Margin="0,6,0,12"/>

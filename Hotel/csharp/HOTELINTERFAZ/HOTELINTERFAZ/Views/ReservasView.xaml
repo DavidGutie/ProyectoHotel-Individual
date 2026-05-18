@@ -101,6 +101,8 @@
                     <DataGridTextColumn Header="Entrada" Binding="{Binding FechaEntrada, StringFormat=dd/MM/yyyy}" Width="105"/>
                     <DataGridTextColumn Header="Salida" Binding="{Binding FechaSalida, StringFormat=dd/MM/yyyy}" Width="105"/>
                     <DataGridTextColumn Header="Personas" Binding="{Binding Personas}" Width="80"/>
+                    <DataGridCheckBoxColumn Header="Mascota" Binding="{Binding IncluyeMascota}" Width="80"/>
+                    <DataGridTextColumn Header="Supl. mascota" Binding="{Binding ImporteSuplementoMascota, StringFormat={}{0:F2} €}" Width="115"/>
                     <DataGridTextColumn Header="Total" Binding="{Binding PrecioTotal, StringFormat={}{0:F2} €}" Width="105"/>
                     <DataGridTextColumn Header="Factura" Binding="{Binding InvoiceNumber}" Width="145"/>
                     <DataGridTextColumn Header="Fecha factura" Binding="{Binding InvoiceIssuedAt, StringFormat=dd/MM/yyyy}" Width="110"/>

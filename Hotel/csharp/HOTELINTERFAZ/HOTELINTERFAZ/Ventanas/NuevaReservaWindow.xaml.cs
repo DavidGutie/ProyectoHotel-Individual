@@ -54,6 +54,8 @@ namespace HOTELINTERFAZ.Ventanas
                 FechaEntradaPicker.SelectedDate = _reservaEditar.FechaEntrada.Date;
                 FechaSalidaPicker.SelectedDate = _reservaEditar.FechaSalida.Date;
                 TextBoxPersonas.Text = _reservaEditar.Personas.ToString();
+                CheckMascota.IsChecked = _reservaEditar.IncluyeMascota;
+                TextBoxMascotas.Text = Math.Max(0, _reservaEditar.Mascotas).ToString();
             }
 
             FechaEntradaPicker.SelectedDateChanged += Fechas_SelectedDateChanged;
@@ -75,6 +77,7 @@ namespace HOTELINTERFAZ.Ventanas
                 HabitacionSeleccionada = HabitacionesDisponibles
                     .FirstOrDefault(h => h.Id == _reservaEditar.HabitacionId);
                 ComboBoxHabitacion.SelectedItem = HabitacionSeleccionada;
+                ActualizarEstadoMascotas();
             }
         }
 
@@ -106,6 +109,50 @@ namespace HOTELINTERFAZ.Ventanas
 
             foreach (var h in disponibles)
                 HabitacionesDisponibles.Add(h);
+
+            ActualizarEstadoMascotas();
+        }
+
+        private void ComboBoxHabitacion_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ActualizarEstadoMascotas();
+        }
+
+        private void Mascota_Changed(object sender, RoutedEventArgs e)
+        {
+            ActualizarEstadoMascotas();
+        }
+
+        private void ActualizarEstadoMascotas()
+        {
+            if (ComboBoxHabitacion?.SelectedItem is not Habitacion habitacion)
+            {
+                if (TextBoxMascotas != null) TextBoxMascotas.IsEnabled = false;
+                if (TxtSuplementoMascotas != null) TxtSuplementoMascotas.Text = "";
+                return;
+            }
+
+            var admiteMascotas = habitacion.AdmiteMascotas;
+            if (CheckMascota != null)
+                CheckMascota.IsEnabled = admiteMascotas;
+
+            if (!admiteMascotas && CheckMascota != null)
+                CheckMascota.IsChecked = false;
+
+            var incluirMascota = CheckMascota?.IsChecked == true && admiteMascotas;
+            if (TextBoxMascotas != null)
+            {
+                TextBoxMascotas.IsEnabled = incluirMascota;
+                if (!incluirMascota) TextBoxMascotas.Text = "0";
+                else if (TextBoxMascotas.Text == "0") TextBoxMascotas.Text = "1";
+            }
+
+            if (TxtSuplementoMascotas != null)
+            {
+                TxtSuplementoMascotas.Text = admiteMascotas
+                    ? $"Suplemento: {habitacion.SuplementoMascotasNoche:F2} €/noche"
+                    : "Esta habitación no admite mascotas";
+            }
         }
 
         private async void Crear_Click(object sender, RoutedEventArgs e)
@@ -126,6 +173,28 @@ namespace HOTELINTERFAZ.Ventanas
             {
                 MessageBox.Show("Selecciona una habitación");
                 return;
+            }
+
+            int mascotas = 0;
+            if (CheckMascota.IsChecked == true)
+            {
+                if (!habitacion.AdmiteMascotas)
+                {
+                    MessageBox.Show("La habitación seleccionada no admite mascotas");
+                    return;
+                }
+
+                if (!int.TryParse(TextBoxMascotas.Text, out mascotas) || mascotas <= 0)
+                {
+                    MessageBox.Show("Número de mascotas inválido");
+                    return;
+                }
+
+                if (habitacion.MaxMascotas > 0 && mascotas > habitacion.MaxMascotas)
+                {
+                    MessageBox.Show($"La habitación admite un máximo de {habitacion.MaxMascotas} mascota(s)");
+                    return;
+                }
             }
 
             string dni = DniTextBox.Text.Trim();
@@ -159,6 +228,8 @@ namespace HOTELINTERFAZ.Ventanas
                 FechaEntrada = FechaEntradaPicker.SelectedDate.Value.Date,
                 FechaSalida = FechaSalidaPicker.SelectedDate.Value.Date,
                 Personas = Math.Min(personas, habitacion.MaxOcupantes),
+                Mascotas = mascotas,
+                WithPet = mascotas > 0,
                 PrecioTotal = (double)precioTotal, // tu modelo usa double
                 Cancelacion = false
             };

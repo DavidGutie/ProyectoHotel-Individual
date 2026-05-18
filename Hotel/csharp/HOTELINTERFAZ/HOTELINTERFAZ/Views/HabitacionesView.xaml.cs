@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
@@ -33,10 +34,36 @@ namespace HOTELINTERFAZ.Views
             if (obj is not Habitacion h) return false;
 
             var q = TxtBuscar?.Text?.Trim().ToLower() ?? "";
+            var amenityFilter = TxtAmenity?.Text?.Trim().ToLower() ?? "";
+            var filtroMascotas = (CmbMascotas?.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Todas";
+
+            if (filtroMascotas == "Admiten mascotas" && !h.AdmiteMascotas)
+                return false;
+
+            if (filtroMascotas == "No admiten mascotas" && h.AdmiteMascotas)
+                return false;
+
+            if (!string.IsNullOrWhiteSpace(amenityFilter))
+            {
+                var requested = amenityFilter
+                    .Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(a => a.Trim())
+                    .Where(a => !string.IsNullOrWhiteSpace(a))
+                    .ToList();
+
+                var roomAmenities = h.Amenities?
+                    .Select(a => a.Name?.Trim().ToLower() ?? "")
+                    .ToHashSet() ?? new HashSet<string>();
+
+                if (requested.Any(a => !roomAmenities.Any(roomAmenity => roomAmenity.Contains(a))))
+                    return false;
+            }
+
             if (string.IsNullOrWhiteSpace(q)) return true;
 
             return h.Numero.ToString().Contains(q)
-                   || (h.Tipo?.ToLower().Contains(q) ?? false);
+                   || (h.Tipo?.ToLower().Contains(q) ?? false)
+                   || (h.AmenitiesTexto?.ToLower().Contains(q) ?? false);
         }
 
 
@@ -53,7 +80,7 @@ namespace HOTELINTERFAZ.Views
                 Imagen = "https://commons.wikimedia.org/wiki/Special:FilePath/Hotel-room-renaissance-columbus-ohio.jpg"
             };
 
-            var win = new HabitacionCrudWindow(nueva)
+            var win = new HabitacionCrudWindow(nueva, _vm.Amenities)
             {
                 Owner = Window.GetWindow(this)
             };
@@ -99,10 +126,15 @@ namespace HOTELINTERFAZ.Views
                 Disponible = selected.Disponible,
                 Oferta = selected.Oferta,
                 Imagen = selected.Imagen,
-                ServiciosTexto = selected.ServiciosTexto
+                ServiciosTexto = selected.ServiciosTexto,
+                Amenities = new System.Collections.ObjectModel.ObservableCollection<Amenity>(selected.Amenities),
+                AdmiteMascotas = selected.AdmiteMascotas,
+                SuplementoMascotasNoche = selected.SuplementoMascotasNoche,
+                PoliticaMascotas = selected.PoliticaMascotas,
+                MaxMascotas = selected.MaxMascotas
             };
 
-            var win = new HabitacionCrudWindow(copia)
+            var win = new HabitacionCrudWindow(copia, _vm.Amenities)
             {
                 Owner = Window.GetWindow(this)
             };
@@ -159,6 +191,25 @@ namespace HOTELINTERFAZ.Views
             _view.Refresh();
         }
 
+        private void Filtro_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            _view?.Refresh();
+        }
+
+        private async void Amenities_Click(object sender, RoutedEventArgs e)
+        {
+            await _vm.CargarAmenitiesAsync();
+
+            var win = new AmenitiesCatalogWindow(_vm)
+            {
+                Owner = Window.GetWindow(this)
+            };
+
+            win.ShowDialog();
+            await _vm.CargarHabitaciones();
+            _view.Refresh();
+        }
+
 
         private void ValidarHabitacion(Habitacion h, bool esNueva)
         {
@@ -173,6 +224,15 @@ namespace HOTELINTERFAZ.Views
 
             if (h.PrecioNoche < 0)
                 throw new Exception("El precio/noche no puede ser negativo.");
+
+            if (h.SuplementoMascotasNoche < 0)
+                throw new Exception("El suplemento por mascota no puede ser negativo.");
+
+            if (!h.AdmiteMascotas && h.SuplementoMascotasNoche > 0)
+                throw new Exception("Activa 'Admite mascotas' para aplicar suplemento.");
+
+            if (h.MaxMascotas < 0)
+                throw new Exception("El máximo de mascotas no puede ser negativo.");
 
             var repes = _vm.Habitaciones.Count(x => x.Numero == h.Numero);
             if (esNueva)
