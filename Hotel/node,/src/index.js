@@ -35,6 +35,7 @@ const authRoutes = require('./auth/auth.routes');
 const resenaRoutes = require('./reseña/reseña.routes');
 const habitacionRoutes = require('./habitacion/habitacion.routes');
 const facturaRoutes = require('./factura/factura.routes');
+const amenityRoutes = require('./amenity/amenity.routes');
 
 app.use('/reservas', reservaRoutes);
 app.use('/cliente', clienteRoutes);
@@ -43,7 +44,9 @@ app.use('/usuario', usuarioRoutes);
 app.use('/auth', authRoutes);
 app.use('/resenas', resenaRoutes);
 app.use('/habitaciones', habitacionRoutes);
+app.use('/rooms', habitacionRoutes);
 app.use('/facturas', facturaRoutes);
+app.use('/amenities', amenityRoutes);
 
 app.listen(PORT, () => {
   console.log(`Servidor API corriendo en http://localhost:${PORT}`);

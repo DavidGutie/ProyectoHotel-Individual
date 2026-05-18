@@ -47,6 +47,40 @@
         "bsonType": "bool",
         "description": "oferta debe ser boolean"
       },
+      "amenities": {
+        "bsonType": "array",
+        "items": {
+          "bsonType": "objectId"
+        },
+        "description": "amenities debe ser un array de ObjectId"
+      },
+      "pets_allowed": {
+        "bsonType": "bool",
+        "description": "pets_allowed debe ser boolean"
+      },
+      "pet_supplement_per_night": {
+        "bsonType": ["int", "double", "decimal"],
+        "minimum": 0,
+        "description": "pet_supplement_per_night debe ser numerico >= 0"
+      },
+      "aceptaMascotas": {
+        "bsonType": "bool",
+        "description": "aceptaMascotas debe ser boolean"
+      },
+      "politicaMascotas": {
+        "bsonType": "string",
+        "description": "politicaMascotas debe ser string"
+      },
+      "suplementoMascota": {
+        "bsonType": ["int", "double", "decimal"],
+        "minimum": 0,
+        "description": "suplementoMascota debe ser numerico >= 0"
+      },
+      "maxMascotas": {
+        "bsonType": "int",
+        "minimum": 0,
+        "description": "maxMascotas debe ser un entero >= 0"
+      },
       "servicios": {
         "bsonType": "array",
         "items": {

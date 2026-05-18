@@ -55,6 +55,48 @@ const habitacionSchema = new mongoose.Schema({
     default: false
   },
 
+  amenities: {
+    type: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Amenity'
+    }],
+    default: []
+  },
+
+  pets_allowed: {
+    type: Boolean,
+    default: false
+  },
+
+  pet_supplement_per_night: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+
+  aceptaMascotas: {
+    type: Boolean,
+    default: false
+  },
+
+  politicaMascotas: {
+    type: String,
+    default: '',
+    trim: true
+  },
+
+  suplementoMascota: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+
+  maxMascotas: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+
   servicios: {
     type: [String],
     default: []
