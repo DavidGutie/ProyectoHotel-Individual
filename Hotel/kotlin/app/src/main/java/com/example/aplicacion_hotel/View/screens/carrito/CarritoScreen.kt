@@ -14,13 +14,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.aplicacion_hotel.Model.Habitacion
 import com.example.aplicacion_hotel.ViewModel.CarritoViewModel
 import com.example.aplicacion_hotel.ViewModel.CarritoViewModelFactory
+import com.example.aplicacion_hotel.View.navigation.Routes
 import com.example.aplicacion_hotel.utils.HotelSessionManager
 
 @Composable
-fun CarritoScreen() {
+fun CarritoScreen(navController: NavController) {
     val context = LocalContext.current
     val sessionManager = remember { HotelSessionManager(context) }
 
@@ -89,6 +91,16 @@ fun CarritoScreen() {
 
                         IconButton(onClick = { vm.eliminarDelCarrito(hab._id) }) {
                             Icon(Icons.Default.Delete, contentDescription = "Quitar")
+                        }
+
+                        Button(
+                            onClick = {
+                                navController.navigate(
+                                    Routes.Pago.createRoute(hab._id, hab.precionoche)
+                                )
+                            }
+                        ) {
+                            Text("Reservar")
                         }
                     }
                 }

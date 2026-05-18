@@ -8,8 +8,10 @@ import com.example.aplicacion_hotel.Model.CrearReservaRequest
 import com.example.aplicacion_hotel.Model.Reserva
 import com.example.aplicacion_hotel.Model.Resena
 import com.example.aplicacion_hotel.Model.CrearResenaRequest
+import com.example.aplicacion_hotel.Model.ReservaAuditEntry
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -50,6 +52,26 @@ interface ApiService {
     suspend fun cancelarReserva(
         @Path("id") id: String
     ): Response<Reserva>
+
+    @GET("reservas/{id}/audit")
+    suspend fun obtenerHistorialReserva(
+        @Path("id") id: String
+    ): Response<List<ReservaAuditEntry>>
+
+    @GET("bookings/{id}/audit")
+    suspend fun obtenerHistorialBooking(
+        @Path("id") id: String
+    ): Response<List<ReservaAuditEntry>>
+
+    @GET("reservas/{id}/invoice")
+    suspend fun descargarFacturaReserva(
+        @Path("id") id: String
+    ): Response<ResponseBody>
+
+    @GET("bookings/{id}/invoice")
+    suspend fun descargarFacturaBooking(
+        @Path("id") id: String
+    ): Response<ResponseBody>
 
     @Multipart
     @PUT("cliente/{id}")

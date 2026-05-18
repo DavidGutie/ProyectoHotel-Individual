@@ -1,6 +1,6 @@
 package com.example.aplicacion_hotel.View.screens.habitaciones
 
-import androidx.compose.foundation.clickable
+import android.widget.Toast
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,6 +37,7 @@ fun HabitacionesScreen(navController: NavController) {
     val habitaciones by vm.habitaciones
     val cargando by vm.cargando
     val error by vm.error
+    val idsCarrito by vm.idsCarrito
 
     var habitacionInfo by remember { mutableStateOf<Habitacion?>(null) }
 
@@ -227,11 +229,21 @@ fun HabitacionesScreen(navController: NavController) {
                     ) { hab ->
                         HabitacionCard(
                             habitacion = hab,
+                            enCarrito = idsCarrito.contains(hab._id),
                             onInfo = { habitacionInfo = hab },
-                            onSelect = {
+                            onReservar = {
                                 navController.navigate(
                                     Routes.Pago.createRoute(hab._id, hab.precionoche)
                                 )
+                            },
+                            onToggleCarrito = {
+                                val estabaEnCarrito = idsCarrito.contains(hab._id)
+                                vm.toggleCarrito(hab._id)
+                                Toast.makeText(
+                                    context,
+                                    if (estabaEnCarrito) "Habitacion quitada del carrito" else "Habitacion anadida al carrito",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         )
                     }
@@ -251,13 +263,13 @@ fun HabitacionesScreen(navController: NavController) {
 @Composable
 private fun HabitacionCard(
     habitacion: Habitacion,
+    enCarrito: Boolean,
     onInfo: () -> Unit,
-    onSelect: () -> Unit
+    onReservar: () -> Unit,
+    onToggleCarrito: () -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onSelect() },
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp)
     ) {
         Row(
@@ -283,6 +295,18 @@ private fun HabitacionCard(
 
             IconButton(onClick = onInfo) {
                 Icon(Icons.Filled.Info, contentDescription = "Información")
+            }
+
+            IconButton(onClick = onToggleCarrito) {
+                Icon(
+                    imageVector = Icons.Filled.ShoppingCart,
+                    contentDescription = if (enCarrito) "Quitar del carrito" else "Anadir al carrito",
+                    tint = if (enCarrito) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                )
+            }
+
+            Button(onClick = onReservar) {
+                Text("Reservar")
             }
         }
     }
