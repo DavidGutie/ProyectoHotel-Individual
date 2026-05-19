@@ -66,18 +66,25 @@ namespace HOTELINTERFAZ.Ventanas
 
         private async void CargarDatosAsync()
         {
-            await _habitacionesVM.CargarHabitaciones();
-            await _reservasVM.CargarReservasAsync();
-            await _clientesVM.CargarClientesAsync();
-
-            ActualizarHabitacionesDisponibles();
-
-            if (_modoEdicion)
+            try
             {
-                HabitacionSeleccionada = HabitacionesDisponibles
-                    .FirstOrDefault(h => h.Id == _reservaEditar.HabitacionId);
-                ComboBoxHabitacion.SelectedItem = HabitacionSeleccionada;
-                ActualizarEstadoMascotas();
+                await _habitacionesVM.CargarHabitaciones();
+                await _reservasVM.CargarReservasAsync();
+                await _clientesVM.CargarClientesAsync();
+
+                ActualizarHabitacionesDisponibles();
+
+                if (_modoEdicion)
+                {
+                    HabitacionSeleccionada = HabitacionesDisponibles
+                        .FirstOrDefault(h => h.Id == _reservaEditar.HabitacionId);
+                    ComboBoxHabitacion.SelectedItem = HabitacionSeleccionada;
+                    ActualizarEstadoMascotas();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("No se pudieron cargar los datos de la reserva: " + ex.Message);
             }
         }
 

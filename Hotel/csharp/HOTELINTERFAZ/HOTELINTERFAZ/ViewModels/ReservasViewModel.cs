@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Data;
 
@@ -17,6 +18,21 @@ namespace HOTELINTERFAZ.ViewModels
         public ObservableCollection<Reserva> Reservas { get; } = new();
 
         public ICollectionView ReservasView { get; }
+
+        private string _mensajeError = "";
+        public string MensajeError
+        {
+            get => _mensajeError;
+            set
+            {
+                if (_mensajeError == value) return;
+                _mensajeError = value;
+                OnPropertyChanged(nameof(MensajeError));
+                OnPropertyChanged(nameof(TieneError));
+            }
+        }
+
+        public bool TieneError => !string.IsNullOrWhiteSpace(MensajeError);
 
         private Reserva _reservaSeleccionada;
         public Reserva ReservaSeleccionada
@@ -82,8 +98,6 @@ namespace HOTELINTERFAZ.ViewModels
 
             ReservasView = CollectionViewSource.GetDefaultView(Reservas);
             ReservasView.Filter = FiltrarReserva;
-
-            _ = CargarReservasAsync();
         }
 
         private bool FiltrarReserva(object obj)
@@ -105,7 +119,24 @@ namespace HOTELINTERFAZ.ViewModels
         {
             try
             {
-                var reservas = await _client.GetFromJsonAsync<List<Reserva>>("reservas");
+                MensajeError = "";
+                var response = await _client.GetAsync("reservas");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var detalle = await response.Content.ReadAsStringAsync();
+                    MensajeError = $"No se pudieron cargar las reservas ({(int)response.StatusCode}). {detalle}";
+                    Reservas.Clear();
+                    ReservasView.Refresh();
+                    return;
+                }
+
+                var opciones = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+
+                var reservas = await response.Content.ReadFromJsonAsync<List<Reserva>>(opciones);
 
                 Reservas.Clear();
 
@@ -117,8 +148,11 @@ namespace HOTELINTERFAZ.ViewModels
 
                 ReservasView.Refresh();
             }
-            catch
+            catch (Exception ex)
             {
+                MensajeError = $"Error al cargar reservas: {ex.Message}";
+                Reservas.Clear();
+                ReservasView.Refresh();
             }
         }
 

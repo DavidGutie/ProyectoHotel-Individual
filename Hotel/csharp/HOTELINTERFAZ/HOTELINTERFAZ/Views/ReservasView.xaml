@@ -18,6 +18,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
@@ -83,7 +84,24 @@
                 </DockPanel>
             </Border>
 
-            <DataGrid Grid.Row="2"
+            <TextBlock Grid.Row="2"
+                       Text="{Binding MensajeError}"
+                       Foreground="#FFFF8A8A"
+                       FontWeight="SemiBold"
+                       Margin="4,0,4,8">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding TieneError}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+            <DataGrid Grid.Row="3"
                       Style="{StaticResource DarkDataGrid}"
                       ItemsSource="{Binding ReservasView}"
                       SelectedItem="{Binding ReservaSeleccionada, Mode=TwoWay}"
