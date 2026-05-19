@@ -56,7 +56,7 @@ namespace HOTELINTERFAZ.ViewModels
         {
             try
             {
-                var lista = await _client.GetFromJsonAsync<List<Cliente>>("cliente");
+                var lista = await _client.GetFromJsonAsync<List<Cliente>>("cliente") ?? new List<Cliente>();
 
 
                 ClientesNoReducido.Clear();

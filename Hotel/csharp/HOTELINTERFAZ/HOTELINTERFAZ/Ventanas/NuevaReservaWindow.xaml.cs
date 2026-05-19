@@ -17,6 +17,7 @@ namespace HOTELINTERFAZ.Ventanas
         private readonly bool _modoEdicion;
 
         public ObservableCollection<Habitacion> HabitacionesDisponibles { get; set; } = new();
+        public Cliente ClienteSeleccionado { get; set; }
         public Habitacion HabitacionSeleccionada { get; set; }
 
         public NuevaReservaWindow(
@@ -49,8 +50,8 @@ namespace HOTELINTERFAZ.Ventanas
                 GuardarButton.Content = "Guardar cambios";
                 FechaEntradaPicker.DisplayDateStart = null;
                 FechaSalidaPicker.DisplayDateStart = null;
-                DniTextBox.IsEnabled = false;
-                DniTextBox.Text = _reservaEditar.Cliente?.Dni ?? "";
+                DniComboBox.IsEnabled = false;
+                DniComboBox.Text = _reservaEditar.Cliente?.Dni ?? "";
                 FechaEntradaPicker.SelectedDate = _reservaEditar.FechaEntrada.Date;
                 FechaSalidaPicker.SelectedDate = _reservaEditar.FechaSalida.Date;
                 TextBoxPersonas.Text = _reservaEditar.Personas.ToString();
@@ -68,18 +69,31 @@ namespace HOTELINTERFAZ.Ventanas
         {
             try
             {
+                await _clientesVM.CargarClientesAsync();
+                DniComboBox.ItemsSource = _clientesVM.ClientesNoReducido;
+
                 await _habitacionesVM.CargarHabitaciones();
                 await _reservasVM.CargarReservasAsync();
-                await _clientesVM.CargarClientesAsync();
 
                 ActualizarHabitacionesDisponibles();
 
                 if (_modoEdicion)
                 {
+                    ClienteSeleccionado = _clientesVM.ClientesNoReducido
+                        .FirstOrDefault(c => string.Equals(c.Id, _reservaEditar.ClienteId, StringComparison.OrdinalIgnoreCase));
+                    DniComboBox.SelectedItem = ClienteSeleccionado;
+                    if (ClienteSeleccionado != null)
+                        DniComboBox.Text = ClienteSeleccionado.DNI;
+
                     HabitacionSeleccionada = HabitacionesDisponibles
                         .FirstOrDefault(h => h.Id == _reservaEditar.HabitacionId);
                     ComboBoxHabitacion.SelectedItem = HabitacionSeleccionada;
                     ActualizarEstadoMascotas();
+                }
+
+                if (_clientesVM.ClientesNoReducido.Count == 0)
+                {
+                    MessageBox.Show("No hay clientes registrados para seleccionar un DNI.");
                 }
             }
             catch (Exception ex)
@@ -104,7 +118,11 @@ namespace HOTELINTERFAZ.Ventanas
             DateTime salida = FechaSalidaPicker.SelectedDate.Value.Date;
 
             if (salida <= entrada)
+            {
+                ComboBoxHabitacion.SelectedItem = null;
+                ActualizarEstadoMascotas();
                 return;
+            }
 
             var disponibles = _habitacionesVM.Habitaciones
                 .Where(h => !_reservasVM.Reservas.Any(r =>
@@ -170,9 +188,24 @@ namespace HOTELINTERFAZ.Ventanas
                 return;
             }
 
-            if (!int.TryParse(TextBoxPersonas.Text, out int personas))
+            DateTime entrada = FechaEntradaPicker.SelectedDate.Value.Date;
+            DateTime salida = FechaSalidaPicker.SelectedDate.Value.Date;
+            if (salida <= entrada)
+            {
+                MessageBox.Show("La fecha de salida debe ser posterior a la fecha de entrada.");
+                return;
+            }
+
+            if (!int.TryParse(TextBoxPersonas.Text, out int personas) || personas <= 0)
             {
                 MessageBox.Show("Número de personas inválido");
+                return;
+            }
+
+            var clienteExistente = ObtenerClienteSeleccionado();
+            if (clienteExistente == null)
+            {
+                MessageBox.Show("Selecciona un DNI registrado del desplegable.");
                 return;
             }
 
@@ -204,27 +237,7 @@ namespace HOTELINTERFAZ.Ventanas
                 }
             }
 
-            string dni = DniTextBox.Text.Trim();
-            if (string.IsNullOrWhiteSpace(dni))
-            {
-                MessageBox.Show("Ingresa el DNI del cliente");
-                return;
-            }
-            var clienteExistente = _clientesVM.ClientesNoReducido
-                .FirstOrDefault(c => c.DNI.Trim().Equals(dni.ToUpper(), StringComparison.OrdinalIgnoreCase));
-
-            if (clienteExistente == null)
-            {
-                MessageBox.Show("El cliente no está registrado");
-                return;
-            }
-
-            int dias = (FechaSalidaPicker.SelectedDate.Value.Date - FechaEntradaPicker.SelectedDate.Value.Date).Days;
-            if (dias <= 0)
-            {
-                MessageBox.Show("La fecha de salida debe ser posterior a la de entrada");
-                return;
-            }
+            int dias = (salida - entrada).Days;
             decimal precioTotal = Convert.ToDecimal(habitacion.PrecioNoche) * dias;
 
             var reserva = new Reserva
@@ -232,8 +245,8 @@ namespace HOTELINTERFAZ.Ventanas
                 Id = _modoEdicion ? _reservaEditar.Id : Guid.NewGuid().ToString(),
                 ClienteId = clienteExistente.Id,
                 HabitacionId = habitacion.Id,
-                FechaEntrada = FechaEntradaPicker.SelectedDate.Value.Date,
-                FechaSalida = FechaSalidaPicker.SelectedDate.Value.Date,
+                FechaEntrada = entrada,
+                FechaSalida = salida,
                 Personas = Math.Min(personas, habitacion.MaxOcupantes),
                 Mascotas = mascotas,
                 WithPet = mascotas > 0,
@@ -263,6 +276,19 @@ namespace HOTELINTERFAZ.Ventanas
         private void Cancelar_Click(object sender, RoutedEventArgs e)
         {
             Close();
+        }
+
+        private Cliente ObtenerClienteSeleccionado()
+        {
+            if (DniComboBox.SelectedItem is Cliente cliente)
+                return cliente;
+
+            var dniEscrito = DniComboBox.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(dniEscrito))
+                return null;
+
+            return _clientesVM.ClientesNoReducido.FirstOrDefault(c =>
+                string.Equals(c.DNI?.Trim(), dniEscrito, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

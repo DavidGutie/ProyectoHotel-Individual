@@ -34,6 +34,18 @@ namespace HOTELINTERFAZ.ViewModels
 
         public bool TieneError => !string.IsNullOrWhiteSpace(MensajeError);
 
+        private string _estadoCarga = "Preparado";
+        public string EstadoCarga
+        {
+            get => _estadoCarga;
+            set
+            {
+                if (_estadoCarga == value) return;
+                _estadoCarga = value;
+                OnPropertyChanged(nameof(EstadoCarga));
+            }
+        }
+
         private Reserva _reservaSeleccionada;
         public Reserva ReservaSeleccionada
         {
@@ -45,7 +57,7 @@ namespace HOTELINTERFAZ.ViewModels
             }
         }
 
-        private bool _mostrarSoloActivas = true;
+        private bool _mostrarSoloActivas = false;
         public bool MostrarSoloActivas
         {
             get => _mostrarSoloActivas;
@@ -120,12 +132,14 @@ namespace HOTELINTERFAZ.ViewModels
             try
             {
                 MensajeError = "";
+                EstadoCarga = "Cargando reservas...";
                 var response = await _client.GetAsync("reservas");
 
                 if (!response.IsSuccessStatusCode)
                 {
                     var detalle = await response.Content.ReadAsStringAsync();
                     MensajeError = $"No se pudieron cargar las reservas ({(int)response.StatusCode}). {detalle}";
+                    EstadoCarga = "No se pudieron cargar reservas";
                     Reservas.Clear();
                     ReservasView.Refresh();
                     return;
@@ -147,10 +161,13 @@ namespace HOTELINTERFAZ.ViewModels
                 }
 
                 ReservasView.Refresh();
+                OnPropertyChanged(nameof(ReservasView));
+                EstadoCarga = $"{Reservas.Count} reserva(s) cargada(s)";
             }
             catch (Exception ex)
             {
                 MensajeError = $"Error al cargar reservas: {ex.Message}";
+                EstadoCarga = "Error al cargar reservas";
                 Reservas.Clear();
                 ReservasView.Refresh();
             }

@@ -85,10 +85,18 @@
             </Border>
 
             <TextBlock Grid.Row="2"
+                       Text="{Binding EstadoCarga}"
+                       Foreground="#FFE6C86E"
+                       FontWeight="SemiBold"
+                       Margin="4,0,4,8">
+            </TextBlock>
+
+            <TextBlock Grid.Row="2"
                        Text="{Binding MensajeError}"
                        Foreground="#FFFF8A8A"
                        FontWeight="SemiBold"
-                       Margin="4,0,4,8">
+                       TextWrapping="Wrap"
+                       Margin="180,0,4,8">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
                         <Setter Property="Visibility" Value="Collapsed"/>
@@ -119,7 +127,7 @@
                     <DataGridTextColumn Header="Entrada" Binding="{Binding FechaEntrada, StringFormat=dd/MM/yyyy}" Width="105"/>
                     <DataGridTextColumn Header="Salida" Binding="{Binding FechaSalida, StringFormat=dd/MM/yyyy}" Width="105"/>
                     <DataGridTextColumn Header="Personas" Binding="{Binding Personas}" Width="80"/>
-                    <DataGridCheckBoxColumn Header="Mascota" Binding="{Binding IncluyeMascota}" Width="80"/>
+                    <DataGridCheckBoxColumn Header="Mascota" Binding="{Binding IncluyeMascota, Mode=OneWay}" Width="80"/>
                     <DataGridTextColumn Header="Supl. mascota" Binding="{Binding ImporteSuplementoMascota, StringFormat={}{0:F2} €}" Width="115"/>
                     <DataGridTextColumn Header="Total" Binding="{Binding PrecioTotal, StringFormat={}{0:F2} €}" Width="105"/>
                     <DataGridTextColumn Header="Factura" Binding="{Binding InvoiceNumber}" Width="145"/>
