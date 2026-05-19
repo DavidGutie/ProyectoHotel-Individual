@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -145,7 +146,17 @@ fun ReservasScreen() {
                             AnimatedVisibility(visible = isExpanded) {
                                 Column {
                                     Spacer(Modifier.height(8.dp))
-                                    Text("Total: ${reserva.precioTotal} EUR")
+                                    val suplementoMascota = reserva.suplementoMascotaReserva
+                                    val baseReserva = (reserva.precioTotal - suplementoMascota).coerceAtLeast(0.0)
+                                    Text("Estancia: ${String.format(Locale.US, "%.2f EUR", baseReserva)}")
+                                    if (suplementoMascota > 0 || reserva.with_pet || reserva.mascotas > 0) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.Pets, contentDescription = null, modifier = Modifier.size(18.dp))
+                                            Spacer(Modifier.width(6.dp))
+                                            Text("Suplemento mascota: ${String.format(Locale.US, "%.2f EUR", suplementoMascota)}")
+                                        }
+                                    }
+                                    Text("Total: ${String.format(Locale.US, "%.2f EUR", reserva.precioTotal)}")
                                     Text("Estado: ${if (reserva.cancelacion) "Cancelada" else "Activa"}")
 
                                     Spacer(Modifier.height(12.dp))

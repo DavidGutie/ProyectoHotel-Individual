@@ -4,8 +4,8 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.aplicacion_hotel.Model.Amenity
 import com.example.aplicacion_hotel.Model.Habitacion
-import com.example.aplicacion_hotel.Model.Reserva
 import com.example.aplicacion_hotel.Network.RetrofitInstance
 import com.example.aplicacion_hotel.Repository.HabitacionRepository
 import com.example.aplicacion_hotel.utils.HotelSessionManager
@@ -21,6 +21,9 @@ class HabitacionesViewModel(
     private val _habitaciones = mutableStateOf<List<Habitacion>>(emptyList())
     val habitaciones: State<List<Habitacion>> = _habitaciones
 
+    private val _amenities = mutableStateOf<List<Amenity>>(emptyList())
+    val amenities: State<List<Amenity>> = _amenities
+
     private val _cargando = mutableStateOf(false)
     val cargando: State<Boolean> = _cargando
 
@@ -30,13 +33,21 @@ class HabitacionesViewModel(
     private val _idsCarrito = mutableStateOf(sessionManager.getCarritoIds())
     val idsCarrito: State<Set<String>> = _idsCarrito
 
+    private var ultimasFechas: Pair<String, String>? = null
+    private var ultimoFiltroMascotas = false
+    private var ultimosAmenities = emptySet<String>()
+
     fun cargarHabitaciones(soloDisponibles: Boolean = true) {
         viewModelScope.launch {
             try {
                 _cargando.value = true
                 _error.value = null
 
-                val todas = repository.getHabitaciones()
+                cargarCatalogoAmenitiesSiHaceFalta()
+                val todas = repository.getHabitaciones(
+                    admiteMascotas = ultimoFiltroMascotas,
+                    amenities = ultimosAmenities.toList()
+                )
                 _habitaciones.value = if (soloDisponibles) {
                     todas.filter { it.disponible }
                 } else {
@@ -58,7 +69,12 @@ class HabitacionesViewModel(
             try {
                 _cargando.value = true
                 _error.value = null
-                val rooms = repository.getHabitaciones()
+                ultimasFechas = fechaEntrada to fechaSalida
+                cargarCatalogoAmenitiesSiHaceFalta()
+                val rooms = repository.getHabitaciones(
+                    admiteMascotas = ultimoFiltroMascotas,
+                    amenities = ultimosAmenities.toList()
+                )
                 
                 val resResponse = RetrofitInstance.api.obtenerTodasLasReservas()
                 val allRes = if (resResponse.isSuccessful) resResponse.body() ?: emptyList() else emptyList()
@@ -95,5 +111,24 @@ class HabitacionesViewModel(
 
     fun toggleCarrito(idHabitacion: String) {
         _idsCarrito.value = sessionManager.toggleCarrito(idHabitacion)
+    }
+
+    fun cargarCatalogoAmenitiesSiHaceFalta() {
+        if (_amenities.value.isNotEmpty()) return
+        viewModelScope.launch {
+            runCatching { repository.getAmenities() }
+                .onSuccess { _amenities.value = it }
+        }
+    }
+
+    fun aplicarFiltros(admiteMascotas: Boolean, amenitiesSeleccionados: Set<String>) {
+        ultimoFiltroMascotas = admiteMascotas
+        ultimosAmenities = amenitiesSeleccionados
+        val fechas = ultimasFechas
+        if (fechas != null) {
+            buscarDisponibles(fechas.first, fechas.second)
+        } else {
+            cargarHabitaciones(soloDisponibles = true)
+        }
     }
 }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,28 +16,34 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.aplicacion_hotel.Model.PetPolicy
+import com.example.aplicacion_hotel.Repository.HabitacionRepository
 import com.example.aplicacion_hotel.ViewModel.ReservaViewModel
 import com.example.aplicacion_hotel.utils.HotelSessionManager
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 fun calcularPrecioTotal(entrada: String, salida: String, precioNoche: Double): Double {
-    if (entrada.isEmpty() || salida.isEmpty()) return 0.0
+    val noches = calcularNoches(entrada, salida)
+    return noches * precioNoche
+}
+
+private fun calcularNoches(entrada: String, salida: String): Int {
+    if (entrada.isEmpty() || salida.isEmpty()) return 0
     val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     sdf.isLenient = false
     return try {
         val date1 = sdf.parse(entrada)
         val date2 = sdf.parse(salida)
-        if (date1 != null && date2 != null) {
-            if (date2.time <= date1.time) return 0.0
-
-            val diffInMillies = date2.time - date1.time
-            val noches = (diffInMillies / (1000 * 60 * 60 * 24)).toInt()
-
-            noches * precioNoche
-        } else 0.0
+        if (date1 == null || date2 == null || date2.time <= date1.time) {
+            0
+        } else {
+            ((date2.time - date1.time) / (1000 * 60 * 60 * 24)).toInt()
+        }
     } catch (e: Exception) {
-        0.0
+        0
     }
 }
 
@@ -50,7 +57,6 @@ fun validarCampos(entrada: String, salida: String, personas: String, tarjeta: St
         sdf.isLenient = false
         val d1 = sdf.parse(entrada)
         val d2 = sdf.parse(salida)
-
         val today = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 0)
@@ -59,12 +65,10 @@ fun validarCampos(entrada: String, salida: String, personas: String, tarjeta: St
         }.time
 
         if (d1 == null || d2 == null) return false
-
         if (d1.before(today)) {
             Toast.makeText(context, "No puedes reservar una fecha pasada", Toast.LENGTH_SHORT).show()
             return false
         }
-
         if (d2.time <= d1.time) {
             Toast.makeText(context, "La fecha de salida debe ser posterior a la de entrada", Toast.LENGTH_SHORT).show()
             return false
@@ -89,41 +93,49 @@ fun PagoScreen(
     val context = LocalContext.current
     val sessionManager = remember { HotelSessionManager(context) }
     val clienteId = remember { sessionManager.getUserId() }
-
     val viewModel: ReservaViewModel = viewModel()
     val reservaExitosa by viewModel.reservaExitosa
 
     var fechaEntrada by remember { mutableStateOf("") }
     var fechaSalida by remember { mutableStateOf("") }
     var personas by remember { mutableStateOf("1") }
-
     var nombreTarjeta by remember { mutableStateOf("") }
     var numeroTarjeta by remember { mutableStateOf("") }
     var fechaVencimiento by remember { mutableStateOf("") }
     var cvv by remember { mutableStateOf("") }
+    var viajoConMascota by remember { mutableStateOf(false) }
+    var petPolicy by remember { mutableStateOf<PetPolicy?>(null) }
+    var cargandoPetPolicy by remember { mutableStateOf(false) }
 
     var showEntradaPicker by remember { mutableStateOf(false) }
     var showSalidaPicker by remember { mutableStateOf(false) }
     val entradaPickerState = rememberDatePickerState()
     val salidaPickerState = rememberDatePickerState()
 
-    val precioTotal = remember(fechaEntrada, fechaSalida, precioNoche) {
+    val precioEstancia = remember(fechaEntrada, fechaSalida, precioNoche) {
         calcularPrecioTotal(fechaEntrada, fechaSalida, precioNoche)
+    }
+    val suplementoMascota = remember(fechaEntrada, fechaSalida, viajoConMascota, petPolicy) {
+        if (viajoConMascota) calcularNoches(fechaEntrada, fechaSalida) * (petPolicy?.suplementoMascotaNoche ?: 0.0) else 0.0
+    }
+    val precioTotal = precioEstancia + suplementoMascota
+
+    LaunchedEffect(habitacionId) {
+        cargandoPetPolicy = true
+        petPolicy = runCatching { HabitacionRepository().getPoliticaMascotas(habitacionId) }.getOrNull()
+        cargandoPetPolicy = false
     }
 
     LaunchedEffect(reservaExitosa) {
         if (reservaExitosa == true) {
-            Toast.makeText(context, "Reserva realizada con éxito", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Reserva realizada con exito", Toast.LENGTH_SHORT).show()
             navController.popBackStack()
         } else if (reservaExitosa == false) {
             Toast.makeText(context, "Error al realizar la reserva", Toast.LENGTH_SHORT).show()
         }
     }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -131,21 +143,12 @@ fun PagoScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Finalizar Reserva",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
+            Text("Finalizar Reserva", style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(16.dp))
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Column(Modifier.padding(16.dp)) {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Datos de la estancia", style = MaterialTheme.typography.titleMedium)
-                    Spacer(Modifier.height(8.dp))
-
                     OutlinedTextField(
                         value = fechaEntrada,
                         onValueChange = {},
@@ -158,9 +161,6 @@ fun PagoScreen(
                         },
                         modifier = Modifier.fillMaxWidth()
                     )
-
-                    Spacer(Modifier.height(8.dp))
-
                     OutlinedTextField(
                         value = fechaSalida,
                         onValueChange = {},
@@ -173,28 +173,36 @@ fun PagoScreen(
                         },
                         modifier = Modifier.fillMaxWidth()
                     )
-
-                    Spacer(Modifier.height(8.dp))
-
                     OutlinedTextField(
                         value = personas,
                         onValueChange = { personas = it },
-                        label = { Text("Número de personas") },
+                        label = { Text("Numero de personas") },
                         modifier = Modifier.fillMaxWidth()
                     )
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Pets, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Viajo con mascota", style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                text = textoPoliticaMascotas(petPolicy, cargandoPetPolicy),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        Switch(
+                            checked = viajoConMascota,
+                            onCheckedChange = { viajoConMascota = it },
+                            enabled = petPolicy?.admiteMascotas == true
+                        )
+                    }
                 }
             }
 
             Spacer(Modifier.height(16.dp))
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Column(Modifier.padding(16.dp)) {
-                    Text("Método de Pago", style = MaterialTheme.typography.titleMedium)
-                    Spacer(Modifier.height(8.dp))
-
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Metodo de pago", style = MaterialTheme.typography.titleMedium)
                     OutlinedTextField(
                         value = nombreTarjeta,
                         onValueChange = { nombreTarjeta = it },
@@ -204,7 +212,7 @@ fun PagoScreen(
                     OutlinedTextField(
                         value = numeroTarjeta,
                         onValueChange = { if (it.length <= 16) numeroTarjeta = it },
-                        label = { Text("Número de tarjeta") },
+                        label = { Text("Numero de tarjeta") },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Row(Modifier.fillMaxWidth()) {
@@ -228,17 +236,22 @@ fun PagoScreen(
             Spacer(Modifier.height(24.dp))
 
             if (precioTotal > 0) {
-                Text(
-                    text = "Total a pagar: " + String.format(Locale.US, "%.2f", precioTotal) + " €",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Resumen de reserva", style = MaterialTheme.typography.titleMedium)
+                        Text("Estancia: ${String.format(Locale.US, "%.2f EUR", precioEstancia)}")
+                        if (viajoConMascota) {
+                            Text("Suplemento mascota: ${String.format(Locale.US, "%.2f EUR", suplementoMascota)}")
+                        }
+                        Text(
+                            "Total a pagar: ${String.format(Locale.US, "%.2f EUR", precioTotal)}",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             } else if (fechaEntrada.isNotEmpty() && fechaSalida.isNotEmpty()) {
-                Text(
-                    text = "Rango de fechas inválido",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Text("Rango de fechas invalido", color = MaterialTheme.colorScheme.error)
             }
 
             Spacer(Modifier.height(16.dp))
@@ -253,7 +266,8 @@ fun PagoScreen(
                                 fechaEntrada = fechaEntrada,
                                 fechaSalida = fechaSalida,
                                 personas = personas.toIntOrNull() ?: 1,
-                                precioTotal = precioTotal
+                                precioTotal = precioEstancia,
+                                mascotas = if (viajoConMascota) 1 else 0
                             )
                         }
                     }
@@ -271,20 +285,14 @@ fun PagoScreen(
             onDismissRequest = { showEntradaPicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    val millis = entradaPickerState.selectedDateMillis
-                    if (millis != null) {
-                        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                        fechaEntrada = sdf.format(Date(millis))
+                    entradaPickerState.selectedDateMillis?.let {
+                        fechaEntrada = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(it))
                     }
                     showEntradaPicker = false
                 }) { Text("Aceptar") }
             },
-            dismissButton = {
-                TextButton(onClick = { showEntradaPicker = false }) { Text("Cancelar") }
-            }
-        ) {
-            DatePicker(state = entradaPickerState)
-        }
+            dismissButton = { TextButton(onClick = { showEntradaPicker = false }) { Text("Cancelar") } }
+        ) { DatePicker(state = entradaPickerState) }
     }
 
     if (showSalidaPicker) {
@@ -292,12 +300,10 @@ fun PagoScreen(
             onDismissRequest = { showSalidaPicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    val millis = salidaPickerState.selectedDateMillis
-                    if (millis != null) {
-                        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                        val selectedDate = sdf.format(Date(millis))
+                    salidaPickerState.selectedDateMillis?.let {
+                        val selectedDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(it))
                         if (selectedDate == fechaEntrada) {
-                            Toast.makeText(context, "La salida no puede ser el mismo día", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "La salida no puede ser el mismo dia", Toast.LENGTH_SHORT).show()
                         } else {
                             fechaSalida = selectedDate
                         }
@@ -305,11 +311,17 @@ fun PagoScreen(
                     showSalidaPicker = false
                 }) { Text("Aceptar") }
             },
-            dismissButton = {
-                TextButton(onClick = { showSalidaPicker = false }) { Text("Cancelar") }
-            }
-        ) {
-            DatePicker(state = salidaPickerState)
-        }
+            dismissButton = { TextButton(onClick = { showSalidaPicker = false }) { Text("Cancelar") } }
+        ) { DatePicker(state = salidaPickerState) }
+    }
+}
+
+private fun textoPoliticaMascotas(policy: PetPolicy?, cargando: Boolean): String {
+    return when {
+        cargando -> "Consultando politica de mascotas..."
+        policy?.admiteMascotas == true && policy.suplementoMascotaNoche > 0 ->
+            String.format(Locale.US, "Suplemento %.2f EUR/noche", policy.suplementoMascotaNoche)
+        policy?.admiteMascotas == true -> "Sin suplemento"
+        else -> "Esta habitacion no admite mascotas"
     }
 }

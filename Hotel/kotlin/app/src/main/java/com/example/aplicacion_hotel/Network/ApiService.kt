@@ -5,6 +5,8 @@ import com.example.aplicacion_hotel.Model.Habitacion
 import com.example.aplicacion_hotel.Model.LoginRequest
 import com.example.aplicacion_hotel.Model.LoginResponse
 import com.example.aplicacion_hotel.Model.CrearReservaRequest
+import com.example.aplicacion_hotel.Model.Amenity
+import com.example.aplicacion_hotel.Model.PetPolicy
 import com.example.aplicacion_hotel.Model.Reserva
 import com.example.aplicacion_hotel.Model.Resena
 import com.example.aplicacion_hotel.Model.CrearResenaRequest
@@ -23,7 +25,18 @@ interface ApiService {
     ): LoginResponse
 
     @GET("habitaciones")
-    suspend fun getHabitaciones(): List<Habitacion>
+    suspend fun getHabitaciones(
+        @Query("pets") pets: Boolean? = null,
+        @Query("amenities") amenities: String? = null
+    ): List<Habitacion>
+
+    @GET("amenities")
+    suspend fun getAmenities(): List<Amenity>
+
+    @GET("habitaciones/{id}/mascotas")
+    suspend fun getPoliticaMascotas(
+        @Path("id") id: String
+    ): PetPolicy
 
     @GET("cliente/{id}")
     suspend fun getClienteById(

@@ -41,7 +41,8 @@ class ReservaViewModel : ViewModel() {
         fechaEntrada: String,
         fechaSalida: String,
         personas: Int,
-        precioTotal: Double
+        precioTotal: Double,
+        mascotas: Int = 0
     ) {
         viewModelScope.launch {
             try {
@@ -51,7 +52,8 @@ class ReservaViewModel : ViewModel() {
                     fechaEntrada,
                     fechaSalida,
                     personas,
-                    precioTotal
+                    precioTotal,
+                    mascotas
                 )
                 val resultado = repository.crearReserva(request)
                 _reservaExitosa.value = resultado

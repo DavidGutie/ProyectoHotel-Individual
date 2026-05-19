@@ -6,5 +6,7 @@ data class CrearReservaRequest(
     val fechaEntrada: String,
     val fechaSalida: String,
     val personas: Int,
-    val precioTotal: Double
+    val precioTotal: Double,
+    val mascotas: Int = 0,
+    val with_pet: Boolean = mascotas > 0
 )
