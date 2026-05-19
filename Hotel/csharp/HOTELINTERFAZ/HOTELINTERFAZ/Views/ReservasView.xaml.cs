@@ -11,13 +11,20 @@ namespace HOTELINTERFAZ.Views
     public partial class ReservasView : UserControl
     {
         private readonly ReservasViewModel _reservasVM = new ReservasViewModel();
-        private readonly HabitacionesViewModel _habitacionesVM = new HabitacionesViewModel();
-        private readonly ClientesViewModel _clientesVM = new ClientesViewModel();
+        private HabitacionesViewModel _habitacionesVM;
+        private ClientesViewModel _clientesVM;
 
         public ReservasView()
         {
             InitializeComponent();
             DataContext = _reservasVM;
+            Loaded += ReservasView_Loaded;
+        }
+
+        private async void ReservasView_Loaded(object sender, RoutedEventArgs e)
+        {
+            Loaded -= ReservasView_Loaded;
+            await _reservasVM.CargarReservasAsync();
         }
 
         private void Buscar_Click(object sender, RoutedEventArgs e)
@@ -27,6 +34,7 @@ namespace HOTELINTERFAZ.Views
 
         private async void NuevaReserva_Click(object sender, RoutedEventArgs e)
         {
+            AsegurarViewModelsReserva();
             var nuevaReservaWindow = new NuevaReservaWindow(_reservasVM, _habitacionesVM, _clientesVM);
             nuevaReservaWindow.ShowDialog();
             await _reservasVM.CargarReservasAsync();
@@ -46,6 +54,7 @@ namespace HOTELINTERFAZ.Views
                 return;
             }
 
+            AsegurarViewModelsReserva();
             var editarReservaWindow = new NuevaReservaWindow(
                 _reservasVM,
                 _habitacionesVM,
@@ -210,6 +219,12 @@ namespace HOTELINTERFAZ.Views
             MessageBox.Show(exito
                 ? "Extra añadido correctamente."
                 : "No se pudo añadir el extra.");
+        }
+
+        private void AsegurarViewModelsReserva()
+        {
+            _habitacionesVM ??= new HabitacionesViewModel();
+            _clientesVM ??= new ClientesViewModel();
         }
 
     }

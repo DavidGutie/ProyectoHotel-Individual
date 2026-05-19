@@ -13,7 +13,13 @@
     <Grid Margin="20">
         <StackPanel>
             <TextBlock Text="DNI del cliente" Foreground="White"/>
-            <TextBox x:Name="DniTextBox"/>
+            <ComboBox x:Name="DniComboBox"
+                      DisplayMemberPath="DNI"
+                      SelectedItem="{Binding ClienteSeleccionado, Mode=TwoWay}"
+                      IsEditable="True"
+                      IsTextSearchEnabled="True"
+                      TextSearch.TextPath="DNI"
+                      StaysOpenOnEdit="True"/>
 
             <TextBlock Text="Fecha de entrada" Foreground="White"/>
             <DatePicker x:Name="FechaEntradaPicker"
